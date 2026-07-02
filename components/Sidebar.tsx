@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, Package, ArrowLeftRight, BarChart3, Bell, Users, FileText, ShieldAlert } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { LayoutDashboard, ShoppingBag, Package, ArrowLeftRight, BarChart3, Bell, Users, FileText, ShieldAlert, LogOut } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useSidebar } from './SidebarContext'
 import { stockStatus } from './StockBar'
 import { cn } from '@/lib/utils'
@@ -42,8 +43,14 @@ const sections = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { open, close } = useSidebar()
   const [alertCount, setAlertCount] = useState(0)
+
+  const handleLogout = useCallback(async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+  }, [router])
 
   useEffect(() => {
     fetch('/api/products')
@@ -127,7 +134,12 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        <div className="sidebar-footer">VANTRA v2.0 · Next.js + SQLite</div>
+        <button
+          onClick={handleLogout}
+          className="sidebar-footer flex items-center justify-center gap-2 hover:text-danger transition-colors w-full"
+        >
+          <LogOut size={12} /> Cerrar sesión
+        </button>
       </aside>
     </>
   )
