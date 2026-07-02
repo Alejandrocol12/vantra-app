@@ -40,14 +40,28 @@ model Variant {
 }
 
 model Cliente {
-  id             String   @id @default(cuid())
+  id             String     @id @default(cuid())
   name           String
   phone          String?
   note           String?
   limiteCredito  Float?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime   @default(now())
   sales          Sale[]
   abonos         Abono[]
+  garantias      Garantia[]
+}
+
+model Garantia {
+  id           String    @id @default(cuid())
+  productName  String
+  variantLabel String?
+  clienteId    String?
+  cliente      Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  issue        String
+  status       String    @default("pendiente")
+  resolution   String?
+  date         DateTime  @default(now())
+  resolvedAt   DateTime?
 }
 
 model Sale {

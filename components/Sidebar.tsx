@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, Package, ArrowLeftRight, BarChart3, Bell, Users, FileText } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Package, ArrowLeftRight, BarChart3, Bell, Users, FileText, ShieldAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSidebar } from './SidebarContext'
 import { stockStatus } from './StockBar'
@@ -27,6 +27,7 @@ const sections = [
     label: 'Clientes',
     items: [
       { href: '/fiado', label: 'Fiado / Créditos', icon: Users },
+      { href: '/garantias', label: 'Garantías', icon: ShieldAlert },
     ],
   },
   {
