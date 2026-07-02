@@ -27,7 +27,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     return NextResponse.json({ ok: true, deleted: true })
   }
 
-  const reference = `REV-${String(Date.now()).slice(-5)}`
+  const reference = `REV-${Date.now().toString(36).toUpperCase()}`
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ops: any[] = [prisma.sale.update({ where: { id: params.id }, data: { status: 'anulada' } })]
 
@@ -40,7 +40,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
         prisma.movement.create({
           data: {
             reference,
-            productId: sale.productId ?? sale.productName,
+            productId: sale.productId ?? 'deleted',
             productName: sale.productName,
             variantId: sale.variantId,
             variantLabel: sale.variantLabel,

@@ -2,12 +2,32 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, startOfMonth, startOfWeek, subDays, format } from 'date-fns'
 
+export const dynamic = 'force-dynamic'
+
+// Colombia = UTC-5: shift "now" to local time for day/month boundaries
+const COL_OFFSET_MS = 5 * 60 * 60 * 1000
+function colStartOfDay(d: Date) {
+  const local = new Date(d.getTime() - COL_OFFSET_MS)
+  const midnight = startOfDay(local)
+  return new Date(midnight.getTime() + COL_OFFSET_MS)
+}
+function colStartOfMonth(d: Date) {
+  const local = new Date(d.getTime() - COL_OFFSET_MS)
+  const m = startOfMonth(local)
+  return new Date(m.getTime() + COL_OFFSET_MS)
+}
+function colStartOfWeek(d: Date) {
+  const local = new Date(d.getTime() - COL_OFFSET_MS)
+  const w = startOfWeek(local, { weekStartsOn: 1 })
+  return new Date(w.getTime() + COL_OFFSET_MS)
+}
+
 export async function GET() {
   const now = new Date()
-  const todayStart = startOfDay(now)
-  const monthStart = startOfMonth(now)
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 })
-  const sevenDaysAgo = subDays(startOfDay(now), 6)
+  const todayStart = colStartOfDay(now)
+  const monthStart = colStartOfMonth(now)
+  const weekStart = colStartOfWeek(now)
+  const sevenDaysAgo = new Date(colStartOfDay(subDays(now, 6)).getTime())
 
   const activeOnly = { status: 'activa' }
 
@@ -58,8 +78,8 @@ export async function GET() {
   }, 0)
 
   const lowStockProducts = productList.filter((p: any) => {
-    if (p.hasVariants) return (p.variants as any[]).some((v: any) => v.stock <= v.minStock)
-    return p.stock <= p.minStock
+    if (p.hasVariants) return (p.variants as any[]).some((v: any) => v.minStock > 0 && v.stock < v.minStock)
+    return p.minStock > 0 && p.stock < p.minStock
   })
 
   const totalDeudaFiado = clientes.reduce((s, c) => {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 function genRef() {
-  return `VTA-${String(Date.now()).slice(-5)}`
+  return `VTA-${Date.now().toString(36).toUpperCase()}`
 }
 
 export async function POST(request: Request) {
