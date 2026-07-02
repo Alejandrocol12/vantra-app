@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VANTRA | Inventario y ventas</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">V</div>
+        <div>
+          <strong>VANTRA</strong>
+          <span>Control comercial</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard">Dashboard</button>
+        <button class="nav-item" data-view="inventario">Inventario</button>
+        <button class="nav-item" data-view="ventas">Ventas</button>
+        <button class="nav-item" data-view="reportes">Reportes</button>
+      </nav>
+    </aside>
+
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sistema de inventario y registro de ventas</p>
+          <h1 id="viewTitle">Dashboard general</h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="secondary-button" id="seedDataBtn">Cargar ejemplo</button>
+          <button class="danger-button" id="clearDataBtn">Limpiar datos</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="stats-grid">
+          <article class="metric">
+            <span>Ventas de hoy</span>
+            <strong id="todaySales">$0</strong>
+            <small id="todayUnits">0 unidades vendidas</small>
+          </article>
+          <article class="metric">
+            <span>Ventas del mes</span>
+            <strong id="monthSales">$0</strong>
+            <small id="monthOrders">0 ventas registradas</small>
+          </article>
+          <article class="metric warning">
+            <span>Stock mínimo</span>
+            <strong id="lowStockCount">0</strong>
+            <small>productos requieren atención</small>
+          </article>
+          <article class="metric">
+            <span>Valor inventario</span>
+            <strong id="inventoryValue">$0</strong>
+            <small>estimado por precio de venta</small>
+          </article>
+        </div>
+
+        <div class="content-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <h2>Ventas recientes</h2>
+              <button class="text-button" data-jump="ventas">Registrar venta</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Cant.</th>
+                    <th>Pago</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody id="recentSalesTable"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>Alertas de inventario</h2>
+              <button class="text-button" data-jump="inventario">Actualizar</button>
+            </div>
+            <div id="lowStockList" class="stock-alert-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="inventario" class="view">
+        <div class="split-layout">
+          <form id="productForm" class="panel form-panel">
+            <div class="panel-header">
+              <h2 id="productFormTitle">Agregar vaper</h2>
+            </div>
+
+            <input type="hidden" id="productId" />
+
+            <label>
+              Nombre del producto
+              <input id="productName" required placeholder="Ej. Elf Bar BC5000" />
+            </label>
+
+            <div class="form-row">
+              <label>
+                Categoría
+                <select id="productCategory" required>
+                  <option value="Desechable">Desechable</option>
+                  <option value="Recargable">Recargable</option>
+                  <option value="Pod">Pod</option>
+                  <option value="Líquido">Líquido</option>
+                  <option value="Accesorio">Accesorio</option>
+                </select>
+              </label>
+
+              <label>
+                Sabor / referencia
+                <input id="productFlavor" placeholder="Ej. Mango Ice" />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                Cantidad
+                <input id="productStock" type="number" min="0" required />
+              </label>
+
+              <label>
+                Stock mínimo
+                <input id="productMinStock" type="number" min="0" required />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label>
+                Precio de compra
+                <input id="productCost" type="number" min="0" step="100" required />
+              </label>
+
+              <label>
+                Precio de venta
+                <input id="productPrice" type="number" min="0" step="100" required />
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="primary-button">Guardar producto</button>
+              <button type="button" class="secondary-button" id="cancelEditProduct">Cancelar</button>
+            </div>
+          </form>
+
+          <section class="panel">
+            <div class="panel-header stackable">
+              <h2>Inventario</h2>
+              <div class="filters">
+                <input id="inventorySearch" placeholder="Buscar producto" />
+                <select id="inventoryCategoryFilter">
+                  <option value="Todas">Todas</option>
+                  <option value="Desechable">Desechable</option>
+                  <option value="Recargable">Recargable</option>
+                  <option value="Pod">Pod</option>
+                  <option value="Líquido">Líquido</option>
+                  <option value="Accesorio">Accesorio</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Stock</th>
+                    <th>Mín.</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="ventas" class="view">
+        <div class="split-layout">
+          <form id="saleForm" class="panel form-panel">
+            <div class="panel-header">
+              <h2>Registrar venta</h2>
+            </div>
+
+            <label>
+              Producto
+              <select id="saleProduct" required></select>
+            </label>
+
+            <div class="form-row">
+              <label>
+                Cantidad
+                <input id="saleQuantity" type="number" min="1" value="1" required />
+              </label>
+
+              <label>
+                Medio de pago
+                <select id="salePayment" required>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Tarjeta">Tarjeta</option>
+                  <option value="Nequi / Daviplata">Nequi / Daviplata</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Nota
+              <textarea id="saleNote" rows="3" placeholder="Cliente, observación o comprobante"></textarea>
+            </label>
+
+            <div class="sale-summary">
+              <span>Total estimado</span>
+              <strong id="saleTotalPreview">$0</strong>
+            </div>
+
+            <button type="submit" class="primary-button">Confirmar venta</button>
+          </form>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>Historial de ventas</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Cant.</th>
+                    <th>Pago</th>
+                    <th>Total</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="salesTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="reportes" class="view">
+        <section class="panel">
+          <div class="panel-header stackable">
+            <h2>Generar reporte</h2>
+            <div class="filters">
+              <select id="reportType">
+                <option value="sales">Ventas</option>
+                <option value="inventory">Inventario</option>
+              </select>
+              <select id="reportPeriod">
+                <option value="daily">Diario</option>
+                <option value="weekly">Semanal</option>
+                <option value="monthly">Mensual</option>
+              </select>
+              <button class="primary-button" id="generateReportBtn">Generar</button>
+              <button class="secondary-button" id="exportReportBtn">Exportar CSV</button>
+            </div>
+          </div>
+
+          <div class="report-cards">
+            <article>
+              <span>Total ventas</span>
+              <strong id="reportTotalSales">$0</strong>
+            </article>
+            <article>
+              <span>Unidades vendidas</span>
+              <strong id="reportUnits">0</strong>
+            </article>
+            <article>
+              <span>Ganancia estimada</span>
+              <strong id="reportProfit">$0</strong>
+            </article>
+            <article>
+              <span>Productos en mínimo</span>
+              <strong id="reportLowStock">0</strong>
+            </article>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead id="reportHead"></thead>
+              <tbody id="reportBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

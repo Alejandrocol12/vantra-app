@@ -1,0 +1,29 @@
+# deps
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# env
+.env
+.env.local
+.env*.local
+
+# database
+*.db
+*.db-journal
+prisma/dev.db
+prisma/dev.db-journal
+
+# build
+/build
+
+# uploads (imágenes subidas por el usuario)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# misc
+.DS_Store
+*.pem
+.agents/
