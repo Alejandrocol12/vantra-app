@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 
 interface Summary { totalSales: number; units: number; profit: number; lowStock: number }
 interface SaleRow { id: string; productName: string; quantity: number; payment: string; total: number; profit: number; date: string; note: string | null }
-interface ProductRow { id: string; name: string; category: string; flavor: string | null; stock: number; minStock: number; price: number; cost: number }
+interface ProductRow { id: string; name: string; variantLabel: string | null; category: string; flavor: string | null; stock: number; minStock: number; price: number; cost: number }
 interface ReportData { type: string; period: string; summary: Summary; sales: SaleRow[]; products: ProductRow[] }
 
 const periods = [{ value: 'daily', label: 'Hoy' }, { value: 'weekly', label: 'Esta semana' }, { value: 'monthly', label: 'Este mes' }]
@@ -33,7 +33,7 @@ export default function ReportesPage() {
     if (!data) return
     const rows = type === 'sales'
       ? data.sales.map(s => ({ Fecha: formatDate(s.date), Producto: s.productName, Cantidad: s.quantity, Pago: s.payment, Total: s.total, Ganancia: s.profit, Nota: s.note ?? '' }))
-      : data.products.map(p => ({ Producto: p.name, Categoría: p.category, Stock: p.stock, Mínimo: p.minStock, 'Valor inventario': p.stock * p.price, Estado: p.stock <= p.minStock ? 'Stock mínimo' : 'Disponible' }))
+      : data.products.map(p => ({ Producto: p.name, Variante: p.variantLabel ?? '', Categoría: p.category, Stock: p.stock, Mínimo: p.minStock || 0, Costo: p.cost, Precio: p.price, 'Valor inventario': p.stock * p.price, Estado: p.minStock > 0 && p.stock < p.minStock ? 'Stock mínimo' : 'Disponible' }))
     if (!rows.length) { toast('No hay datos para exportar.', 'error'); return }
     const headers = Object.keys(rows[0])
     const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${String((r as Record<string, unknown>)[h] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n')
@@ -58,7 +58,7 @@ export default function ReportesPage() {
     if (type === 'sales') {
       autoTable(doc, { startY: 36, head: [['Fecha', 'Producto', 'Cant.', 'Pago', 'Total', 'Ganancia']], body: data.sales.map(s => [formatDate(s.date), s.productName, s.quantity, s.payment, formatCurrency(s.total), formatCurrency(s.profit)]), styles: { fontSize: 8 }, headStyles: { fillColor: [24, 95, 165] }, alternateRowStyles: { fillColor: [245, 245, 242] } })
     } else {
-      autoTable(doc, { startY: 36, head: [['Producto', 'Cat.', 'Stock', 'Mín.', 'Valor inv.', 'Estado']], body: data.products.map(p => [p.name, p.category, p.stock, p.minStock, formatCurrency(p.stock * p.price), p.stock <= p.minStock ? 'Stock mínimo' : 'Disponible']), styles: { fontSize: 8 }, headStyles: { fillColor: [24, 95, 165] }, alternateRowStyles: { fillColor: [245, 245, 242] } })
+      autoTable(doc, { startY: 36, head: [['Producto', 'Variante', 'Cat.', 'Stock', 'Mín.', 'Precio', 'Valor inv.', 'Estado']], body: data.products.map(p => [p.name, p.variantLabel ?? '—', p.category, p.stock, p.minStock || '—', formatCurrency(p.price), formatCurrency(p.stock * p.price), p.minStock > 0 && p.stock < p.minStock ? 'Stock mínimo' : 'Disponible']), styles: { fontSize: 8 }, headStyles: { fillColor: [24, 95, 165] }, alternateRowStyles: { fillColor: [245, 245, 242] } })
     }
     doc.save(`vantra-${type}-${period}-${new Date().toISOString().slice(0, 10)}.pdf`)
     toast('PDF exportado.')
@@ -92,12 +92,20 @@ export default function ReportesPage() {
       {data && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { label: 'Total ventas', val: formatCurrency(data.summary.totalSales) },
-              { label: 'Unidades vendidas', val: String(data.summary.units) },
-              { label: 'Ganancia estimada', val: formatCurrency(data.summary.profit) },
-              { label: 'Productos en mínimo', val: String(data.summary.lowStock) },
-            ].map(m => (
+            {(type === 'inventory'
+              ? [
+                  { label: 'Referencias', val: String(data.products.length) },
+                  { label: 'Unidades en stock', val: String(data.summary.units) },
+                  { label: 'Costo total inventario', val: formatCurrency(data.summary.profit) },
+                  { label: 'Productos en mínimo', val: String(data.summary.lowStock) },
+                ]
+              : [
+                  { label: 'Total ventas', val: formatCurrency(data.summary.totalSales) },
+                  { label: 'Unidades vendidas', val: String(data.summary.units) },
+                  { label: 'Ganancia estimada', val: formatCurrency(data.summary.profit) },
+                  { label: 'Productos en mínimo', val: String(data.summary.lowStock) },
+                ]
+            ).map(m => (
               <div key={m.label} className="metric">
                 <p className="metric-label">{m.label}</p>
                 <p className="metric-value">{m.val}</p>
@@ -139,10 +147,14 @@ export default function ReportesPage() {
                       ? <tr><td colSpan={9} className="empty-state">No hay productos.</td></tr>
                       : data.products.map(p => (
                         <tr key={p.id}>
-                          <td><p className="font-medium">{p.name}</p>{p.flavor && <p className="text-[11px] text-muted">{p.flavor}</p>}</td>
+                          <td>
+                            <p className="font-medium">{p.name}</p>
+                            {p.variantLabel && <p className="text-[11px] text-brand">{p.variantLabel}</p>}
+                            {p.flavor && <p className="text-[11px] text-muted">{p.flavor}</p>}
+                          </td>
                           <td className="text-muted">{p.category}</td>
                           <td className="font-semibold">{p.stock}</td>
-                          <td className="text-muted">{p.minStock}</td>
+                          <td className="text-muted">{p.minStock || '—'}</td>
                           <td className="text-muted">{formatCurrency(p.cost)}</td>
                           <td>{formatCurrency(p.price)}</td>
                           <td className="font-semibold">{formatCurrency(p.stock * p.price)}</td>
