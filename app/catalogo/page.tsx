@@ -80,7 +80,7 @@ export default function CatalogoPage() {
                       <p className="text-[13px] font-semibold leading-snug mb-1 line-clamp-2">{p.name}</p>
                       {p.hasVariants
                         ? <p className="text-[11px] text-brand mb-1 flex items-center gap-1"><Layers size={10} />{available} sabores</p>
-                        : p.flavor && <p className="text-[11px] text-muted mb-1 truncate">{p.flavor}</p>
+                        : <p className="text-[11px] text-muted mb-1 truncate">{[p.flavor, p.puffs ? `${p.puffs.toLocaleString()} puffs` : null].filter(Boolean).join(' · ')}</p>
                       }
                       <div className="mt-auto pt-2 flex items-center justify-between">
                         <span className="text-[14px] font-bold text-brand">

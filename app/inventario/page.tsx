@@ -11,13 +11,13 @@ interface Variant {
   id: string; label: string; stock: number; minStock: number; cost: number; price: number
 }
 interface Product {
-  id: string; name: string; category: string; flavor: string | null; image: string | null
+  id: string; name: string; category: string; flavor: string | null; puffs: number | null; image: string | null
   stock: number; minStock: number; cost: number; price: number; hasVariants: boolean
   variants: Variant[]
 }
 
 const EMOJIS: Record<string, string> = { Desechable: '🔋', Recargable: '⚡', Pod: '💨', Líquido: '🧪', Accesorio: '🔩' }
-const emptyForm = { name: '', category: 'Desechable', flavor: '', stock: 0, minStock: 0, cost: 0, price: 0, hasVariants: false }
+const emptyForm = { name: '', category: 'Desechable', flavor: '', puffs: '', stock: 0, minStock: 0, cost: 0, price: 0, hasVariants: false }
 const emptyVForm = { label: '', stock: 0, minStock: 0, cost: 0, price: 0 }
 
 export default function InventarioPage() {
@@ -59,7 +59,7 @@ export default function InventarioPage() {
 
   function startEdit(p: Product) {
     setEditId(p.id); setExpandedId(null)
-    setForm({ name: p.name, category: p.category, flavor: p.flavor ?? '', stock: p.stock, minStock: p.minStock, cost: p.cost, price: p.price, hasVariants: p.hasVariants })
+    setForm({ name: p.name, category: p.category, flavor: p.flavor ?? '', puffs: p.puffs ? String(p.puffs) : '', stock: p.stock, minStock: p.minStock, cost: p.cost, price: p.price, hasVariants: p.hasVariants })
     setImageFile(null); setImagePreview(p.image)
     setShowVForm(false); setEditVId(null); setVForm({ ...emptyVForm })
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -83,8 +83,8 @@ export default function InventarioPage() {
     setSaving(true)
     try {
       const body = form.hasVariants
-        ? { name: form.name, category: form.category, flavor: null, stock: 0, minStock: 0, cost: 0, price: 0 }
-        : form
+        ? { name: form.name, category: form.category, flavor: null, puffs: form.puffs ? Number(form.puffs) : null, stock: 0, minStock: 0, cost: 0, price: 0 }
+        : { ...form, puffs: form.puffs ? Number(form.puffs) : null }
       const res = await fetch(editId ? `/api/products/${editId}` : '/api/products', {
         method: editId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,7 +98,7 @@ export default function InventarioPage() {
         await fetch(`/api/products/${productId}/image`, { method: 'POST', body: fd })
       }
       toast(editId ? 'Producto actualizado.' : 'Producto agregado.')
-      if (!editId) { setEditId(productId); setForm(f => ({ ...f, ...body, flavor: body.flavor ?? '' })) } else cancelEdit()
+      if (!editId) { setEditId(productId); setForm(f => ({ ...f, ...body, flavor: body.flavor ?? '', puffs: body.puffs ? String(body.puffs) : '' })) } else cancelEdit()
       load()
     } finally { setSaving(false) }
   }
@@ -215,9 +215,15 @@ export default function InventarioPage() {
 
               {!form.hasVariants && (
                 <>
-                  <div className="field">
-                    <label className="label">Sabor / ref.</label>
-                    <input className="input text-[12px]" placeholder="Mango Ice" value={form.flavor} onChange={e => setForm(f => ({ ...f, flavor: e.target.value }))} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="field">
+                      <label className="label">Sabor / ref.</label>
+                      <input className="input text-[12px]" placeholder="Mango Ice" value={form.flavor} onChange={e => setForm(f => ({ ...f, flavor: e.target.value }))} />
+                    </div>
+                    <div className="field">
+                      <label className="label">Puffs</label>
+                      <input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" placeholder="3500" value={form.puffs} onChange={e => setForm(f => ({ ...f, puffs: e.target.value }))} />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="field"><label className="label">Stock</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" required value={form.stock} onChange={e => setForm(f => ({ ...f, stock: Number(e.target.value) }))} /></div>
@@ -393,7 +399,7 @@ export default function InventarioPage() {
                               <p className="font-medium text-[12px]">{p.name}</p>
                               {p.hasVariants
                                 ? <p className="text-[11px] text-brand flex items-center gap-1"><Layers size={10} />{p.variants.length} variantes</p>
-                                : p.flavor && <p className="text-[11px] text-muted">{p.flavor}</p>
+                                : <p className="text-[11px] text-muted">{[p.flavor, p.puffs ? `${p.puffs.toLocaleString()} puffs` : null].filter(Boolean).join(' · ')}</p>
                               }
                             </td>
                             <td className="text-muted">{p.category}</td>
