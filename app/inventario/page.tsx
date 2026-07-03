@@ -220,8 +220,8 @@ export default function InventarioPage() {
                     <input className="input text-[12px]" placeholder="Mango Ice" value={form.flavor} onChange={e => setForm(f => ({ ...f, flavor: e.target.value }))} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="field"><label className="label">Stock</label><input className="input text-[12px]" type="number" min="0" required value={form.stock} onChange={e => setForm(f => ({ ...f, stock: Number(e.target.value) }))} /></div>
-                    <div className="field"><label className="label">Stock mínimo</label><input className="input text-[12px]" type="number" min="0" required value={form.minStock} onChange={e => setForm(f => ({ ...f, minStock: Number(e.target.value) }))} /></div>
+                    <div className="field"><label className="label">Stock</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" required value={form.stock} onChange={e => setForm(f => ({ ...f, stock: Number(e.target.value) }))} /></div>
+                    <div className="field"><label className="label">Stock mínimo</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" required value={form.minStock} onChange={e => setForm(f => ({ ...f, minStock: Number(e.target.value) }))} /></div>
                   </div>
                   {/* Price calculator */}
                   <div>
@@ -236,22 +236,22 @@ export default function InventarioPage() {
                         <div className="grid grid-cols-2 gap-2">
                           <div className="field">
                             <label className="label">Valor de la caja ($)</label>
-                            <input className="input text-[12px]" type="number" min="0" step="1000" placeholder="500000"
+                            <input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="1000" placeholder="500000"
                               value={calc.boxCost || ''} onChange={e => setCalc(c => ({ ...c, boxCost: Number(e.target.value) }))} />
                           </div>
                           <div className="field">
                             <label className="label">Unidades por caja</label>
-                            <input className="input text-[12px]" type="number" min="1" placeholder="10"
+                            <input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="1" placeholder="10"
                               value={calc.units || ''} onChange={e => setCalc(c => ({ ...c, units: Math.max(1, Number(e.target.value)) }))} />
                           </div>
                           <div className="field">
                             <label className="label">Domicilio / envío ($)</label>
-                            <input className="input text-[12px]" type="number" min="0" step="1000" placeholder="20000"
+                            <input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="1000" placeholder="20000"
                               value={calc.delivery || ''} onChange={e => setCalc(c => ({ ...c, delivery: Number(e.target.value) }))} />
                           </div>
                           <div className="field">
                             <label className="label">Margen deseado (%)</label>
-                            <input className="input text-[12px]" type="number" min="0" max="99" placeholder="30"
+                            <input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" max="99" placeholder="30"
                               value={calc.margin || ''} onChange={e => setCalc(c => ({ ...c, margin: Number(e.target.value) }))} />
                           </div>
                         </div>
@@ -277,8 +277,8 @@ export default function InventarioPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="field"><label className="label">Costo</label><input className="input text-[12px]" type="number" min="0" step="100" required value={form.cost} onChange={e => setForm(f => ({ ...f, cost: Number(e.target.value) }))} /></div>
-                    <div className="field"><label className="label">Precio venta</label><input className="input text-[12px]" type="number" min="0" step="100" required value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} /></div>
+                    <div className="field"><label className="label">Costo</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="100" required value={form.cost} onChange={e => setForm(f => ({ ...f, cost: Number(e.target.value) }))} /></div>
+                    <div className="field"><label className="label">Precio venta</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="100" required value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} /></div>
                   </div>
                 </>
               )}
@@ -336,10 +336,10 @@ export default function InventarioPage() {
                     <input className="input text-[12px]" required placeholder="Mango Ice" value={vForm.label} onChange={e => setVForm(f => ({ ...f, label: e.target.value }))} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="field"><label className="label">Stock</label><input className="input text-[12px]" type="number" min="0" value={vForm.stock} onChange={e => setVForm(f => ({ ...f, stock: Number(e.target.value) }))} /></div>
-                    <div className="field"><label className="label">Stock mínimo</label><input className="input text-[12px]" type="number" min="0" value={vForm.minStock} onChange={e => setVForm(f => ({ ...f, minStock: Number(e.target.value) }))} /></div>
-                    <div className="field"><label className="label">Costo</label><input className="input text-[12px]" type="number" min="0" step="100" value={vForm.cost} onChange={e => setVForm(f => ({ ...f, cost: Number(e.target.value) }))} /></div>
-                    <div className="field"><label className="label">Precio venta</label><input className="input text-[12px]" type="number" min="0" step="100" value={vForm.price} onChange={e => setVForm(f => ({ ...f, price: Number(e.target.value) }))} /></div>
+                    <div className="field"><label className="label">Stock</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" value={vForm.stock} onChange={e => setVForm(f => ({ ...f, stock: Number(e.target.value) }))} /></div>
+                    <div className="field"><label className="label">Stock mínimo</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" value={vForm.minStock} onChange={e => setVForm(f => ({ ...f, minStock: Number(e.target.value) }))} /></div>
+                    <div className="field"><label className="label">Costo</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="100" value={vForm.cost} onChange={e => setVForm(f => ({ ...f, cost: Number(e.target.value) }))} /></div>
+                    <div className="field"><label className="label">Precio venta</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="100" value={vForm.price} onChange={e => setVForm(f => ({ ...f, price: Number(e.target.value) }))} /></div>
                   </div>
                   <div className="flex gap-2">
                     <button type="submit" disabled={savingV} className="btn-primary flex-1 justify-center text-[12px]">
