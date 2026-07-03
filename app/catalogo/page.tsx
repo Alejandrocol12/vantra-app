@@ -324,7 +324,7 @@ function CatalogoContent() {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button onClick={() => changeQty(key, -1)} className="w-6 h-6 rounded-md flex items-center justify-center text-brand" style={{ background: 'rgba(139,92,246,0.15)' }}><Minus size={10} /></button>
                     <span className="w-5 text-center text-[12px] font-bold">{qty}</span>
-                    <button onClick={() => changeQty(key, 1, variant ? variant.stock : product.stock)} disabled={qty >= (variant ? variant.stock : product.stock)} className="w-6 h-6 rounded-md flex items-center justify-center text-brand disabled:opacity-30" style={{ background: 'rgba(139,92,246,0.15)' }}><Plus size={10} /></button>
+                    <button onClick={() => changeQty(key, 1, v ? v.stock : p.stock)} disabled={qty >= (v ? v.stock : p.stock)} className="w-6 h-6 rounded-md flex items-center justify-center text-brand disabled:opacity-30" style={{ background: 'rgba(139,92,246,0.15)' }}><Plus size={10} /></button>
                   </div>
                   <button onClick={() => removeItem(key)} className="btn-icon ml-1"><X size={12} /></button>
                 </div>
