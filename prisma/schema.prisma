@@ -56,20 +56,6 @@ model Cliente {
   createdAt      DateTime   @default(now())
   sales          Sale[]
   abonos         Abono[]
-  garantias      Garantia[]
-}
-
-model Garantia {
-  id           String    @id @default(cuid())
-  productName  String
-  variantLabel String?
-  clienteId    String?
-  cliente      Cliente?  @relation(fields: [clienteId], references: [id], onDelete: SetNull)
-  issue        String
-  status       String    @default("pendiente")
-  resolution   String?
-  date         DateTime  @default(now())
-  resolvedAt   DateTime?
 }
 
 model Sale {
@@ -98,15 +84,6 @@ model Abono {
   amount    Float
   note      String?
   date      DateTime @default(now())
-}
-
-model Gasto {
-  id          String   @id @default(cuid())
-  description String
-  category    String
-  amount      Float
-  date        DateTime @default(now())
-  note        String?
 }
 
 model Movement {

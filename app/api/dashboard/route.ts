@@ -31,7 +31,7 @@ export async function GET() {
 
   const activeOnly = { status: 'activa' }
 
-  const [todayAgg, monthAgg, products, recentSales, weekSales, topRaw, clientes, gastosMonth, gastosToday] = await Promise.all([
+  const [todayAgg, monthAgg, products, recentSales, weekSales, topRaw, clientes] = await Promise.all([
     prisma.sale.aggregate({
       where: { date: { gte: todayStart }, ...activeOnly },
       _sum: { total: true, quantity: true },
@@ -67,8 +67,6 @@ export async function GET() {
         abonos: { select: { amount: true } },
       },
     }),
-    prisma.gasto.aggregate({ where: { date: { gte: monthStart } }, _sum: { amount: true } }),
-    prisma.gasto.aggregate({ where: { date: { gte: todayStart } }, _sum: { amount: true } }),
   ])
 
   const productList = products as any[]
@@ -121,12 +119,9 @@ export async function GET() {
     category: (productMap.get(r.productId) as any)?.category ?? '',
   }))
 
-  const gastosDelMes = gastosMonth._sum.amount ?? 0
-  const gastosDeHoy = gastosToday._sum.amount ?? 0
-
   return NextResponse.json({
-    today: { total: todayAgg._sum.total ?? 0, units: todayAgg._sum.quantity ?? 0, gastos: gastosDeHoy },
-    month: { total: monthAgg._sum.total ?? 0, count: monthAgg._count, gastos: gastosDelMes },
+    today: { total: todayAgg._sum.total ?? 0, units: todayAgg._sum.quantity ?? 0 },
+    month: { total: monthAgg._sum.total ?? 0, count: monthAgg._count },
     inventory: { value: inventoryValue, lowStockCount: lowStockProducts.length, lowStockProducts },
     fiado: { totalDeuda: totalDeudaFiado, clientesConDeuda },
     recentSales,

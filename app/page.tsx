@@ -8,8 +8,8 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
 interface DashboardData {
-  today: { total: number; units: number; gastos: number }
-  month: { total: number; count: number; gastos: number }
+  today: { total: number; units: number }
+  month: { total: number; count: number }
   inventory: {
     value: number
     lowStockCount: number
@@ -71,22 +71,6 @@ export default function DashboardPage() {
           <p className="metric-sub">
             {data.fiado?.clientesConDeuda > 0 ? `${data.fiado.clientesConDeuda} clientes con deuda` : 'Sin deudas pendientes'}
           </p>
-        </div>
-      </div>
-
-      {/* Gastos del mes */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="metric">
-          <p className="metric-label">Gastos del mes</p>
-          <p className="metric-value text-danger">{formatCurrency(data.month.gastos)}</p>
-          <p className="metric-sub">hoy: {formatCurrency(data.today.gastos)}</p>
-        </div>
-        <div className="metric">
-          <p className="metric-label">Ganancia real del mes</p>
-          <p className={cn('metric-value', (data.month.total - data.month.gastos) >= 0 ? 'text-success' : 'text-danger')}>
-            {formatCurrency(Math.max(0, data.month.total - data.month.gastos))}
-          </p>
-          <p className="metric-sub">ventas − gastos operativos</p>
         </div>
       </div>
 
