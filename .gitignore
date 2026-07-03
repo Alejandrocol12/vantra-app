@@ -27,3 +27,6 @@ prisma/dev.db-journal
 .DS_Store
 *.pem
 .agents/
+
+.vercel
+.env*
