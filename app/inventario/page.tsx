@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Pencil, Trash2, Plus, Search, ImagePlus, X, ChevronDown, ChevronUp, Layers, Calculator, Check } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, ImagePlus, X, ChevronDown, ChevronUp, Layers, Calculator, Check, Link2 } from 'lucide-react'
 import { formatCurrency, CATEGORIES } from '@/lib/utils'
 import { useToast, ToastContainer } from '@/components/Toast'
 import StockBar, { StockBadge } from '@/components/StockBar'
@@ -19,6 +19,22 @@ interface Product {
 const EMOJIS: Record<string, string> = { Desechable: '🔋', Recargable: '⚡', Pod: '💨', Líquido: '🧪', Accesorio: '🔩' }
 const emptyForm = { name: '', category: 'Desechable', flavor: '', puffs: '', stock: 0, minStock: 0, cost: 0, price: 0, hasVariants: false }
 const emptyVForm = { label: '', stock: 0, minStock: 0, cost: 0, price: 0 }
+
+function CopyLinkButton() {
+  const [copied, setCopied] = useState(false)
+  async function copy() {
+    const url = `${window.location.origin}/catalogo`
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <button onClick={copy} className="btn shrink-0 text-[12px]" style={copied ? { color: '#34d399', borderColor: 'rgba(52,211,153,0.3)' } : {}}>
+      {copied ? <Check size={13} /> : <Link2 size={13} />}
+      {copied ? 'Enlace copiado' : 'Compartir catálogo'}
+    </button>
+  )
+}
 
 export default function InventarioPage() {
   const { messages, toast, dismiss } = useToast()
@@ -160,9 +176,12 @@ export default function InventarioPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-0.5">Inventario</p>
-        <h1>Productos</h1>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-0.5">Inventario</p>
+          <h1>Productos</h1>
+        </div>
+        <CopyLinkButton />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4 items-start">
