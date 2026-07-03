@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { Search, Layers } from 'lucide-react'
+import { Search, Layers, MessageCircle } from 'lucide-react'
 import { formatCurrency, CATEGORIES } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
 interface Variant { id: string; label: string; stock: number; price: number }
 interface Product {
@@ -13,22 +15,58 @@ interface Product {
 
 const EMOJIS: Record<string, string> = { Desechable: '🔋', Recargable: '⚡', Pod: '💨', Líquido: '🧪', Accesorio: '🔩' }
 
-export default function CatalogoPage() {
+function CatalogoContent() {
+  const searchParams = useSearchParams()
+  const userId = searchParams.get('u')
+
   const [products, setProducts] = useState<Product[]>([])
+  const [storeName, setStoreName] = useState('')
+  const [whatsapp, setWhatsapp] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [cat, setCat] = useState('Todas')
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    fetch('/api/products').then(r => r.json()).then((all: Product[]) =>
-      setProducts(all.filter(p => p.hasVariants ? p.variants.some(v => v.stock > 0) : p.stock > 0))
-    )
-  }, [])
+    if (!userId) { setNotFound(true); return }
+    fetch(`/api/public?u=${userId}`)
+      .then(r => { if (!r.ok) { setNotFound(true); return null } return r.json() })
+      .then((d) => {
+        if (!d) return
+        setStoreName(d.storeName)
+        setWhatsapp(d.whatsappNumber)
+        setProducts((d.products as Product[]).filter(p =>
+          p.hasVariants ? p.variants.some(v => v.stock > 0) : p.stock > 0
+        ))
+      })
+  }, [userId])
 
   const filtered = useMemo(() => products.filter(p => {
     const q = search.toLowerCase()
     return `${p.name} ${p.flavor ?? ''} ${p.category}`.toLowerCase().includes(q)
       && (cat === 'Todas' || p.category === cat)
   }), [products, search, cat])
+
+  function openWhatsApp(p: Product) {
+    const variants = p.hasVariants ? p.variants.filter(v => v.stock > 0) : []
+    const variantText = variants.length > 0
+      ? `\nSabores disponibles: ${variants.map(v => v.label).join(', ')}`
+      : ''
+    const price = p.hasVariants
+      ? `Desde ${formatCurrency(Math.min(...variants.map(v => v.price)))}`
+      : formatCurrency(p.price)
+    const puffsText = p.puffs ? ` (${p.puffs.toLocaleString()} puffs)` : ''
+    const msg = encodeURIComponent(
+      `Hola! Me interesa este producto del catálogo:\n\n*${p.name}${puffsText}*${p.flavor ? `\nSabor: ${p.flavor}` : ''}${variantText}\nPrecio: ${price}\n\n¿Está disponible?`
+    )
+    const phone = whatsapp!.replace(/\D/g, '')
+    window.open(`https://wa.me/${phone}?text=${msg}`, '_blank')
+  }
+
+  if (notFound) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#07070f' }}>
+      <p className="text-muted text-[13px]">Catálogo no encontrado.</p>
+    </div>
+  )
 
   return (
     <div className="min-h-screen" style={{ background: '#07070f' }}>
@@ -37,7 +75,7 @@ export default function CatalogoPage() {
         className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="sidebar-logo-icon">V</div>
-          <span className="sidebar-logo-text text-[18px]">VANTRA</span>
+          <span className="sidebar-logo-text text-[18px]">{storeName || 'VANTRA'}</span>
         </div>
         <span className="text-[11px] text-muted">Catálogo de productos</span>
       </div>
@@ -61,9 +99,7 @@ export default function CatalogoPage() {
           : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {filtered.map(p => {
-                const available = p.hasVariants
-                  ? p.variants.filter(v => v.stock > 0).length
-                  : p.stock
+                const available = p.hasVariants ? p.variants.filter(v => v.stock > 0).length : p.stock
                 const minPrice = p.hasVariants
                   ? Math.min(...p.variants.filter(v => v.stock > 0).map(v => v.price))
                   : p.price
@@ -82,18 +118,28 @@ export default function CatalogoPage() {
                         ? <p className="text-[11px] text-brand mb-1 flex items-center gap-1"><Layers size={10} />{available} sabores</p>
                         : <p className="text-[11px] text-muted mb-1 truncate">{[p.flavor, p.puffs ? `${p.puffs.toLocaleString()} puffs` : null].filter(Boolean).join(' · ')}</p>
                       }
-                      <div className="mt-auto pt-2 flex items-center justify-between">
-                        <span className="text-[14px] font-bold text-brand">
-                          {p.hasVariants ? `Desde ${formatCurrency(minPrice)}` : formatCurrency(p.price)}
-                        </span>
-                        <span className={cn(
-                          'text-[10px] px-2 py-0.5 rounded-full font-semibold',
-                          available > 0
-                            ? 'bg-success/15 text-success border border-success/20'
-                            : 'bg-danger/15 text-danger border border-danger/20'
-                        )}>
-                          {available > 0 ? 'Disponible' : 'Agotado'}
-                        </span>
+                      <div className="mt-auto pt-2 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[14px] font-bold text-brand">
+                            {p.hasVariants ? `Desde ${formatCurrency(minPrice)}` : formatCurrency(p.price)}
+                          </span>
+                          <span className={cn(
+                            'text-[10px] px-2 py-0.5 rounded-full font-semibold',
+                            available > 0 ? 'bg-success/15 text-success border border-success/20' : 'bg-danger/15 text-danger border border-danger/20'
+                          )}>
+                            {available > 0 ? 'Disponible' : 'Agotado'}
+                          </span>
+                        </div>
+                        {whatsapp && available > 0 && (
+                          <button
+                            onClick={() => openWhatsApp(p)}
+                            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-opacity hover:opacity-90"
+                            style={{ background: 'rgba(37,211,102,0.12)', color: '#25d366', border: '1px solid rgba(37,211,102,0.25)' }}
+                          >
+                            <MessageCircle size={12} />
+                            Pedir por WhatsApp
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -108,5 +154,13 @@ export default function CatalogoPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function CatalogoPage() {
+  return (
+    <Suspense>
+      <CatalogoContent />
+    </Suspense>
   )
 }

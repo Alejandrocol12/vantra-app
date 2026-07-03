@@ -9,11 +9,12 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  name            String
+  email           String   @unique
+  passwordHash    String
+  whatsappNumber  String?
+  createdAt       DateTime @default(now())
 }
 
 model Product {

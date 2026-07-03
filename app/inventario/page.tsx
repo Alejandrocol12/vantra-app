@@ -23,7 +23,9 @@ const emptyVForm = { label: '', stock: 0, minStock: 0, cost: 0, price: 0 }
 function CopyLinkButton() {
   const [copied, setCopied] = useState(false)
   async function copy() {
-    const url = `${window.location.origin}/catalogo`
+    const res = await fetch('/api/me')
+    const me = await res.json()
+    const url = `${window.location.origin}/catalogo?u=${me.id}`
     await navigator.clipboard.writeText(url)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -56,12 +58,28 @@ export default function InventarioPage() {
   const [showVForm, setShowVForm] = useState(false)
   const [savingV, setSavingV] = useState(false)
 
+  // WhatsApp config
+  const [whatsappInput, setWhatsappInput] = useState('')
+  const [savingWa, setSavingWa] = useState(false)
+
   async function load() {
     const res = await fetch('/api/products')
     setProducts(await res.json())
     setLoading(false)
   }
-  useEffect(() => { load() }, [])
+  async function loadMe() {
+    const res = await fetch('/api/me')
+    const me = await res.json()
+    setWhatsappInput(me.whatsappNumber ?? '')
+  }
+  useEffect(() => { load(); loadMe() }, [])
+
+  async function saveWhatsapp() {
+    setSavingWa(true)
+    await fetch('/api/me', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ whatsappNumber: whatsappInput }) })
+    setSavingWa(false)
+    toast('Número de WhatsApp guardado.', 'success')
+  }
 
   function startEdit(p: Product) {
     setEditId(p.id); setExpandedId(null)
@@ -313,6 +331,26 @@ export default function InventarioPage() {
               )}
             </div>
           )}
+          {/* WhatsApp config */}
+          <div className="card">
+            <div className="card-head">
+              <span className="card-title">WhatsApp de la tienda</span>
+            </div>
+            <div className="p-4 space-y-2">
+              <p className="text-[11px] text-muted">Los clientes del catálogo podrán hacer pedidos a este número.</p>
+              <div className="flex gap-2">
+                <input
+                  className="input flex-1 text-[12px]"
+                  placeholder="+57 300 000 0000"
+                  value={whatsappInput}
+                  onChange={e => setWhatsappInput(e.target.value)}
+                />
+                <button onClick={saveWhatsapp} disabled={savingWa} className="btn-primary text-[12px]">
+                  {savingWa ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ── Right panel: Table ── */}
