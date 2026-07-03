@@ -142,7 +142,7 @@ function CatalogoContent() {
         {filtered.length === 0
           ? <p className="text-center text-muted py-16 text-[13px]">No hay productos disponibles.</p>
           : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {filtered.map(p => {
                 const availableVariants = p.hasVariants ? p.variants.filter(v => v.stock > 0) : []
                 const available = p.hasVariants ? availableVariants.length : p.stock
@@ -153,10 +153,10 @@ function CatalogoContent() {
 
                 return (
                   <div key={p.id} className={cn('prod-card flex flex-col transition-all', cartQty > 0 && 'ring-1 ring-brand/40')} style={cartQty > 0 ? { background: 'rgba(139,92,246,0.06)' } : {}}>
-                    <div className="w-full h-[130px] rounded-lg overflow-hidden bg-surface2 flex items-center justify-center mb-2.5 flex-shrink-0 relative">
+                    <div className="w-full aspect-square rounded-xl overflow-hidden bg-surface2 flex items-center justify-center mb-3 flex-shrink-0 relative">
                       {p.image
                         ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                        : <span className="text-4xl">{EMOJIS[p.category] ?? '📦'}</span>
+                        : <span className="text-6xl">{EMOJIS[p.category] ?? '📦'}</span>
                       }
                       {cartQty > 0 && (
                         <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-brand flex items-center justify-center text-[10px] font-bold text-white">
@@ -165,14 +165,14 @@ function CatalogoContent() {
                       )}
                     </div>
                     <div className="flex-1 flex flex-col">
-                      <p className="text-[13px] font-semibold leading-snug mb-1 line-clamp-2">{p.name}</p>
+                      <p className="text-[15px] font-semibold leading-snug mb-1 line-clamp-2">{p.name}</p>
                       {p.hasVariants
-                        ? <p className="text-[11px] text-brand mb-1 flex items-center gap-1"><Layers size={10} />{availableVariants.length} sabores disponibles</p>
-                        : <p className="text-[11px] text-muted mb-1 truncate">{[p.flavor, p.puffs ? `${p.puffs.toLocaleString()} puffs` : null].filter(Boolean).join(' · ')}</p>
+                        ? <p className="text-[12px] text-brand mb-1 flex items-center gap-1"><Layers size={11} />{availableVariants.length} sabores disponibles</p>
+                        : <p className="text-[12px] text-muted mb-1 truncate">{[p.flavor, p.puffs ? `${p.puffs.toLocaleString()} puffs` : null].filter(Boolean).join(' · ')}</p>
                       }
                       <div className="mt-auto pt-2 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[14px] font-bold text-brand">
+                          <span className="text-[16px] font-bold text-brand">
                             {p.hasVariants ? `Desde ${formatCurrency(minPrice)}` : formatCurrency(p.price)}
                           </span>
                           <span className={cn(

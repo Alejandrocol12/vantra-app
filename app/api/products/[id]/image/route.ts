@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { writeFile, mkdir, unlink } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { put, del } from '@vercel/blob'
+import { getUserId, unauthorized } from '@/lib/auth'
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  try { await getUserId() } catch { return unauthorized() }
+
   const formData = await request.formData()
   const file = formData.get('image') as File | null
 
@@ -21,41 +22,30 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: 'La imagen no puede superar 3 MB.' }, { status: 400 })
   }
 
-  const ext = file.type.split('/')[1].replace('jpeg', 'jpg')
-  const uploadDir = join(process.cwd(), 'public', 'uploads', 'products')
-
-  if (!existsSync(uploadDir)) {
-    await mkdir(uploadDir, { recursive: true })
-  }
-
-  // delete old image file so no stale files remain
+  // delete old blob if it was previously uploaded
   const existing = await prisma.product.findUnique({ where: { id: params.id }, select: { image: true } })
-  if (existing?.image) {
-    const oldPath = join(process.cwd(), 'public', existing.image)
-    if (existsSync(oldPath)) await unlink(oldPath).catch(() => {})
+  if (existing?.image?.startsWith('https://')) {
+    await del(existing.image).catch(() => {})
   }
 
-  // timestamp suffix busts browser cache
-  const filename = `${params.id}-${Date.now()}.${ext}`
-  const buffer = Buffer.from(await file.arrayBuffer())
-  await writeFile(join(uploadDir, filename), buffer)
+  const ext = file.type.split('/')[1].replace('jpeg', 'jpg')
+  const blob = await put(`products/${params.id}-${Date.now()}.${ext}`, file, { access: 'public' })
 
-  const image = `/uploads/products/${filename}`
-  await prisma.product.update({ where: { id: params.id }, data: { image } })
+  await prisma.product.update({ where: { id: params.id }, data: { image: blob.url } })
 
-  return NextResponse.json({ image })
+  return NextResponse.json({ image: blob.url })
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  try { await getUserId() } catch { return unauthorized() }
+
   const product = await prisma.product.findUnique({ where: { id: params.id }, select: { image: true } })
 
-  if (product?.image) {
-    const filePath = join(process.cwd(), 'public', product.image)
-    if (existsSync(filePath)) {
-      await unlink(filePath).catch(() => {})
-    }
-    await prisma.product.update({ where: { id: params.id }, data: { image: null } })
+  if (product?.image?.startsWith('https://')) {
+    await del(product.image).catch(() => {})
   }
+
+  await prisma.product.update({ where: { id: params.id }, data: { image: null } })
 
   return NextResponse.json({ ok: true })
 }
