@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Pencil, Trash2, Plus, Search, ImagePlus, X, ChevronDown, ChevronUp, Layers, Calculator, Check, Link2 } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, ImagePlus, X, ChevronDown, ChevronUp, Layers, Check, Link2 } from 'lucide-react'
 import { formatCurrency, CATEGORIES } from '@/lib/utils'
 import { useToast, ToastContainer } from '@/components/Toast'
 import StockBar, { StockBadge } from '@/components/StockBar'
@@ -49,16 +49,6 @@ export default function InventarioPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-
-  // Price calculator
-  const [showCalc, setShowCalc] = useState(false)
-  const [calc, setCalc] = useState({ boxCost: 0, units: 1, delivery: 0, margin: 30 })
-  const calcUnit = calc.units > 0 ? (calc.boxCost + calc.delivery) / calc.units : 0
-  const calcPrice = calc.margin < 100 ? calcUnit / (1 - calc.margin / 100) : 0
-  function applyCalc() {
-    setForm(f => ({ ...f, cost: Math.round(calcUnit), price: Math.round(calcPrice) }))
-    setShowCalc(false)
-  }
 
   // Variant management
   const [vForm, setVForm] = useState({ ...emptyVForm })
@@ -248,59 +238,6 @@ export default function InventarioPage() {
                     <div className="field"><label className="label">Stock</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" required value={form.stock} onChange={e => setForm(f => ({ ...f, stock: Number(e.target.value) }))} /></div>
                     <div className="field"><label className="label">Stock mínimo</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" required value={form.minStock} onChange={e => setForm(f => ({ ...f, minStock: Number(e.target.value) }))} /></div>
                   </div>
-                  {/* Price calculator */}
-                  <div>
-                    <button type="button" onClick={() => setShowCalc(v => !v)}
-                      className="btn text-[11px] py-1 w-full justify-center mb-2">
-                      <Calculator size={12} />
-                      {showCalc ? 'Ocultar calculadora' : 'Calcular precio por caja'}
-                    </button>
-                    {showCalc && (
-                      <div className="rounded-xl p-3 space-y-2.5" style={{ background: 'rgba(217,70,239,0.06)', border: '1px solid rgba(217,70,239,0.18)' }}>
-                        <p className="text-[10px] font-bold text-accent uppercase tracking-wider">Calculadora de precio</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="field">
-                            <label className="label">Valor de la caja ($)</label>
-                            <input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="1000" placeholder="500000"
-                              value={calc.boxCost || ''} onChange={e => setCalc(c => ({ ...c, boxCost: Number(e.target.value) }))} />
-                          </div>
-                          <div className="field">
-                            <label className="label">Unidades por caja</label>
-                            <input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="1" placeholder="10"
-                              value={calc.units || ''} onChange={e => setCalc(c => ({ ...c, units: Math.max(1, Number(e.target.value)) }))} />
-                          </div>
-                          <div className="field">
-                            <label className="label">Domicilio / envío ($)</label>
-                            <input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="1000" placeholder="20000"
-                              value={calc.delivery || ''} onChange={e => setCalc(c => ({ ...c, delivery: Number(e.target.value) }))} />
-                          </div>
-                          <div className="field">
-                            <label className="label">Margen deseado (%)</label>
-                            <input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" max="99" placeholder="30"
-                              value={calc.margin || ''} onChange={e => setCalc(c => ({ ...c, margin: Number(e.target.value) }))} />
-                          </div>
-                        </div>
-                        {calcUnit > 0 && (
-                          <div className="flex items-center justify-between text-[12px] py-2 px-3 rounded-lg bg-surface2">
-                            <span className="text-muted">Costo unitario</span>
-                            <span className="font-semibold">${Math.round(calcUnit).toLocaleString()}</span>
-                          </div>
-                        )}
-                        {calcPrice > 0 && (
-                          <div className="flex items-center justify-between text-[13px] px-3 py-2 rounded-lg" style={{ background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.2)' }}>
-                            <span className="text-muted">Precio sugerido</span>
-                            <span className="font-bold text-brand">${Math.round(calcPrice).toLocaleString()}</span>
-                          </div>
-                        )}
-                        {calcPrice > 0 && (
-                          <button type="button" onClick={applyCalc} className="btn-primary w-full justify-center text-[11px] py-1.5">
-                            <Check size={12} /> Aplicar al formulario
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
                   <div className="grid grid-cols-2 gap-2">
                     <div className="field"><label className="label">Costo</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="100" required value={form.cost} onChange={e => setForm(f => ({ ...f, cost: Number(e.target.value) }))} /></div>
                     <div className="field"><label className="label">Precio venta</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" step="100" required value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} /></div>

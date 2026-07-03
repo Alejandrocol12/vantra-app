@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, startOfMonth, startOfWeek, subDays, format } from 'date-fns'
+import { getUserId, unauthorized } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +24,9 @@ function colStartOfWeek(d: Date) {
 }
 
 export async function GET() {
+  let userId: string
+  try { userId = await getUserId() } catch { return unauthorized() }
+
   const now = new Date()
   const todayStart = colStartOfDay(now)
   const monthStart = colStartOfMonth(now)
@@ -33,35 +37,37 @@ export async function GET() {
 
   const [todayAgg, monthAgg, products, recentSales, weekSales, topRaw, clientes] = await Promise.all([
     prisma.sale.aggregate({
-      where: { date: { gte: todayStart }, ...activeOnly },
+      where: { userId, date: { gte: todayStart }, ...activeOnly },
       _sum: { total: true, quantity: true },
     }),
     prisma.sale.aggregate({
-      where: { date: { gte: monthStart }, ...activeOnly },
+      where: { userId, date: { gte: monthStart }, ...activeOnly },
       _sum: { total: true },
       _count: true,
     }),
     prisma.product.findMany({
+      where: { userId },
       include: { variants: { select: { stock: true, minStock: true, price: true } } },
     }),
     prisma.sale.findMany({
-      where: activeOnly,
+      where: { userId, ...activeOnly },
       orderBy: { date: 'desc' },
       take: 6,
       select: { id: true, productName: true, variantLabel: true, quantity: true, payment: true, total: true, date: true },
     }),
     prisma.sale.findMany({
-      where: { date: { gte: sevenDaysAgo }, ...activeOnly },
+      where: { userId, date: { gte: sevenDaysAgo }, ...activeOnly },
       select: { total: true, date: true, payment: true },
     }),
     prisma.sale.groupBy({
       by: ['productId', 'productName'],
-      where: { date: { gte: weekStart }, ...activeOnly },
+      where: { userId, date: { gte: weekStart }, ...activeOnly },
       _sum: { quantity: true, total: true },
       orderBy: { _sum: { quantity: 'desc' } },
       take: 5,
     }),
     prisma.cliente.findMany({
+      where: { userId },
       include: {
         sales: { where: { payment: 'Fiado', ...activeOnly }, select: { total: true } },
         abonos: { select: { amount: true } },

@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getUserId, unauthorized } from '@/lib/auth'
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const includeAnuladas = searchParams.get('includeAnuladas') === '1'
+export const dynamic = 'force-dynamic'
 
-  const sales = await prisma.sale.findMany({
-    where: includeAnuladas ? undefined : undefined, // always return all, UI filters
-    orderBy: { date: 'desc' },
-  })
-  return NextResponse.json(sales)
+export async function GET() {
+  try {
+    const userId = await getUserId()
+    const sales = await prisma.sale.findMany({
+      where: { userId },
+      orderBy: { date: 'desc' },
+    })
+    return NextResponse.json(sales)
+  } catch { return unauthorized() }
 }

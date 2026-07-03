@@ -18,6 +18,7 @@ model User {
 
 model Product {
   id          String    @id @default(cuid())
+  userId      String
   name        String
   category    String
   flavor      String?
@@ -50,6 +51,7 @@ model Variant {
 
 model Cliente {
   id             String     @id @default(cuid())
+  userId         String
   name           String
   phone          String?
   note           String?
@@ -61,6 +63,7 @@ model Cliente {
 
 model Sale {
   id           String   @id @default(cuid())
+  userId       String
   productId    String?
   product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   productName  String
@@ -89,6 +92,7 @@ model Abono {
 
 model Movement {
   id           String   @id @default(cuid())
+  userId       String
   reference    String
   productId    String
   productName  String

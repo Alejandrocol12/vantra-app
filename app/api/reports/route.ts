@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, startOfWeek, startOfMonth } from 'date-fns'
+import { getUserId, unauthorized } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +15,9 @@ function colStart(fn: (d: Date) => Date): Date {
 }
 
 export async function GET(request: Request) {
+  let userId: string
+  try { userId = await getUserId() } catch { return unauthorized() }
+
   const { searchParams } = new URL(request.url)
   const type = searchParams.get('type') ?? 'sales'
   const period = searchParams.get('period') ?? 'daily'
@@ -25,11 +29,12 @@ export async function GET(request: Request) {
 
   const [products, periodSales] = await Promise.all([
     prisma.product.findMany({
+      where: { userId },
       include: { variants: { orderBy: { label: 'asc' } } },
       orderBy: { category: 'asc' },
     }),
     type === 'sales'
-      ? prisma.sale.findMany({ where: { date: { gte: start }, status: 'activa' }, orderBy: { date: 'desc' } })
+      ? prisma.sale.findMany({ where: { userId, date: { gte: start }, status: 'activa' }, orderBy: { date: 'desc' } })
       : Promise.resolve([]),
   ])
 
