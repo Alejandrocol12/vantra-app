@@ -97,7 +97,7 @@ export default function InventarioPage() {
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; if (!file) return
-    if (file.size > 500 * 1024) { toast('La imagen no puede superar 500 KB.', 'error'); return }
+    if (file.size > 2 * 1024 * 1024) { toast('La imagen no puede superar 2 MB.', 'error'); return }
     setImageFile(file); setImagePreview(URL.createObjectURL(file))
   }
 
@@ -211,7 +211,7 @@ export default function InventarioPage() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <button type="button" onClick={() => fileRef.current?.click()} className="btn text-[11px] py-1"><ImagePlus size={12} />{imagePreview ? 'Cambiar' : 'Subir'}</button>
-                    <span className="text-[10px] text-muted">Máx. 500 KB</span>
+                    <span className="text-[10px] text-muted">Máx. 2 MB</span>
                     {imagePreview && <button type="button" onClick={() => editId ? removeImage(editId) : (setImageFile(null), setImagePreview(null))} className="btn text-[11px] py-1 hover:!text-danger"><X size={11} /> Quitar</button>}
                   </div>
                 </div>

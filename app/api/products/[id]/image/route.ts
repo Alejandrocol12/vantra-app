@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserId, unauthorized } from '@/lib/auth'
 
-const MAX_BYTES = 500 * 1024 // 500 KB
+const MAX_BYTES = 2 * 1024 * 1024 // 2 MB
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try { await getUserId() } catch { return unauthorized() }
@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'La imagen no puede superar 500 KB.' }, { status: 400 })
+    return NextResponse.json({ error: 'La imagen no puede superar 2 MB.' }, { status: 400 })
   }
 
   const buffer = Buffer.from(await file.arrayBuffer())
