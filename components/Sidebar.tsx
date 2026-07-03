@@ -173,7 +173,7 @@ export default function Sidebar() {
         {/* Share catalog */}
         <div className="px-3 pb-2 relative" ref={shareRef}>
           <button
-            onClick={() => { if (navigator.share) { handleNativeShare() } else { setShowShare(v => !v) } }}
+            onClick={() => { if ('share' in navigator) { handleNativeShare() } else { setShowShare(v => !v) } }}
             className="sidebar-link w-full text-brand"
             style={{ color: 'rgba(139,92,246,0.85)' }}
           >
