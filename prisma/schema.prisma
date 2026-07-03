@@ -100,6 +100,15 @@ model Abono {
   date      DateTime @default(now())
 }
 
+model Gasto {
+  id          String   @id @default(cuid())
+  description String
+  category    String
+  amount      Float
+  date        DateTime @default(now())
+  note        String?
+}
+
 model Movement {
   id           String   @id @default(cuid())
   reference    String

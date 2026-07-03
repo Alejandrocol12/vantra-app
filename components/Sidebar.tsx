@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, Package, ArrowLeftRight, BarChart3, Bell, Users, FileText, ShieldAlert, LogOut } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Package, ArrowLeftRight, BarChart3, Bell, Users, FileText, ShieldAlert, LogOut, Wallet } from 'lucide-react'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSidebar } from './SidebarContext'
@@ -29,6 +29,12 @@ const sections = [
     items: [
       { href: '/fiado', label: 'Fiado / Créditos', icon: Users },
       { href: '/garantias', label: 'Garantías', icon: ShieldAlert },
+    ],
+  },
+  {
+    label: 'Finanzas',
+    items: [
+      { href: '/gastos', label: 'Gastos', icon: Wallet },
     ],
   },
   {
