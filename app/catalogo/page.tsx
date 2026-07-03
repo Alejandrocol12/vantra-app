@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 
 interface Variant { id: string; label: string; stock: number; price: number }
 interface Product {
-  id: string; name: string; category: string; flavor: string | null; image: string | null
+  id: string; name: string; category: string; flavor: string | null; puffs: number | null; image: string | null
   stock: number; price: number; hasVariants: boolean; variants: Variant[]
 }
 
