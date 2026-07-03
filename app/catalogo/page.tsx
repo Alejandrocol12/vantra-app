@@ -67,11 +67,13 @@ function CatalogoContent() {
     })
   }
 
-  function changeQty(key: string, delta: number) {
+  function changeQty(key: string, delta: number, maxStock?: number) {
     setCart(prev => prev.flatMap(i => {
       if (i.key !== key) return [i]
       const newQty = i.qty + delta
-      return newQty <= 0 ? [] : [{ ...i, qty: newQty }]
+      if (newQty <= 0) return []
+      if (maxStock !== undefined && newQty > maxStock) return [i]
+      return [{ ...i, qty: newQty }]
     }))
   }
 
@@ -198,7 +200,7 @@ function CatalogoContent() {
                                   <Minus size={11} />
                                 </button>
                                 <span className="flex-1 text-center text-[13px] font-bold">{cartQty}</span>
-                                <button onClick={() => changeQty(p.id, 1)} className="flex-none w-7 h-7 rounded-lg flex items-center justify-center text-brand" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}>
+                                <button onClick={() => changeQty(p.id, 1, p.stock)} disabled={cartQty >= p.stock} className="flex-none w-7 h-7 rounded-lg flex items-center justify-center text-brand disabled:opacity-30" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}>
                                   <Plus size={11} />
                                 </button>
                               </div>
@@ -270,7 +272,7 @@ function CatalogoContent() {
                           <Minus size={11} />
                         </button>
                         <span className="w-5 text-center text-[13px] font-bold">{inCart.qty}</span>
-                        <button onClick={() => changeQty(key, 1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-brand" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}>
+                        <button onClick={() => changeQty(key, 1, v.stock)} disabled={inCart.qty >= v.stock} className="w-7 h-7 rounded-lg flex items-center justify-center text-brand disabled:opacity-30" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}>
                           <Plus size={11} />
                         </button>
                       </div>
@@ -322,7 +324,7 @@ function CatalogoContent() {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button onClick={() => changeQty(key, -1)} className="w-6 h-6 rounded-md flex items-center justify-center text-brand" style={{ background: 'rgba(139,92,246,0.15)' }}><Minus size={10} /></button>
                     <span className="w-5 text-center text-[12px] font-bold">{qty}</span>
-                    <button onClick={() => changeQty(key, 1)} className="w-6 h-6 rounded-md flex items-center justify-center text-brand" style={{ background: 'rgba(139,92,246,0.15)' }}><Plus size={10} /></button>
+                    <button onClick={() => changeQty(key, 1, variant ? variant.stock : product.stock)} disabled={qty >= (variant ? variant.stock : product.stock)} className="w-6 h-6 rounded-md flex items-center justify-center text-brand disabled:opacity-30" style={{ background: 'rgba(139,92,246,0.15)' }}><Plus size={10} /></button>
                   </div>
                   <button onClick={() => removeItem(key)} className="btn-icon ml-1"><X size={12} /></button>
                 </div>

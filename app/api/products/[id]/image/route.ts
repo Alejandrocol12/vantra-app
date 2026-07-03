@@ -28,7 +28,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
     await mkdir(uploadDir, { recursive: true })
   }
 
-  const filename = `${params.id}.${ext}`
+  // delete old image file so no stale files remain
+  const existing = await prisma.product.findUnique({ where: { id: params.id }, select: { image: true } })
+  if (existing?.image) {
+    const oldPath = join(process.cwd(), 'public', existing.image)
+    if (existsSync(oldPath)) await unlink(oldPath).catch(() => {})
+  }
+
+  // timestamp suffix busts browser cache
+  const filename = `${params.id}-${Date.now()}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
   await writeFile(join(uploadDir, filename), buffer)
 
