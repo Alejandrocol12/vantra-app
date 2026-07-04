@@ -107,8 +107,8 @@ export default function InventarioPage() {
     setSaving(true)
     try {
       const body = form.hasVariants
-        ? { name: form.name, category: form.category, flavor: null, puffs: form.puffs ? Number(form.puffs) : null, stock: 0, minStock: 0, cost: 0, price: 0 }
-        : { ...form, puffs: form.puffs ? Number(form.puffs) : null }
+        ? { name: form.name, category: form.category, hasVariants: true, flavor: null, puffs: null, stock: 0, minStock: 0, cost: 0, price: 0 }
+        : { ...form, hasVariants: false, puffs: form.puffs ? Number(form.puffs) : null }
       const res = await fetch(editId ? `/api/products/${editId}` : '/api/products', {
         method: editId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +119,8 @@ export default function InventarioPage() {
       const productId = editId ?? saved.id
       if (imageFile && productId) {
         const fd = new FormData(); fd.append('image', imageFile)
-        await fetch(`/api/products/${productId}/image`, { method: 'POST', body: fd })
+        const imgRes = await fetch(`/api/products/${productId}/image`, { method: 'POST', body: fd })
+        if (!imgRes.ok) { toast((await imgRes.json()).error ?? 'Error al subir la imagen.', 'error'); return }
       }
       toast(editId ? 'Producto actualizado.' : 'Producto agregado.')
       if (!editId) { setEditId(productId); setForm(f => ({ ...f, ...body, flavor: body.flavor ?? '', puffs: body.puffs ? String(body.puffs) : '' })) } else cancelEdit()
@@ -127,9 +128,11 @@ export default function InventarioPage() {
     } finally { setSaving(false) }
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return
     const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
     if (!res.ok) { toast((await res.json()).error, 'error'); return }
+    if (editId === id) cancelEdit()
     toast('Producto eliminado.'); load()
   }
 
@@ -162,8 +165,9 @@ export default function InventarioPage() {
     } finally { setSavingV(false) }
   }
 
-  async function deleteVariant(variantId: string) {
+  async function deleteVariant(variantId: string, label: string) {
     if (!editId) return
+    if (!confirm(`¿Eliminar la variante "${label}"?`)) return
     const res = await fetch(`/api/products/${editId}/variants/${variantId}`, { method: 'DELETE' })
     if (!res.ok) { toast((await res.json()).error, 'error'); return }
     toast('Variante eliminada.'); load()
@@ -303,7 +307,7 @@ export default function InventarioPage() {
                   </div>
                   <div className="flex gap-1">
                     <button className="btn-icon" onClick={() => startEditVariant(v)}><Pencil size={11} /></button>
-                    <button className="btn-icon hover:!text-danger" onClick={() => deleteVariant(v.id)}><Trash2 size={11} /></button>
+                    <button className="btn-icon hover:!text-danger" onClick={() => deleteVariant(v.id, v.label)}><Trash2 size={11} /></button>
                   </div>
                 </div>
               ))}
@@ -410,7 +414,7 @@ export default function InventarioPage() {
                                   </button>
                                 )}
                                 <button className="btn-icon" title="Editar" onClick={() => startEdit(p)}><Pencil size={11} /></button>
-                                <button className="btn-icon hover:!text-danger" title="Eliminar" onClick={() => handleDelete(p.id)}><Trash2 size={11} /></button>
+                                <button className="btn-icon hover:!text-danger" title="Eliminar" onClick={() => handleDelete(p.id, p.name)}><Trash2 size={11} /></button>
                               </div>
                             </td>
                           </tr>
