@@ -62,6 +62,10 @@ export default function InventarioPage() {
   const [whatsappInput, setWhatsappInput] = useState('')
   const [savingWa, setSavingWa] = useState(false)
 
+  // Confirm dialog
+  const [dialog, setDialog] = useState<{ msg: string; onOk: () => void } | null>(null)
+  function askConfirm(msg: string, onOk: () => void) { setDialog({ msg, onOk }) }
+
   async function load() {
     const res = await fetch('/api/products')
     setProducts(await res.json())
@@ -129,11 +133,12 @@ export default function InventarioPage() {
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return
-    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
-    if (!res.ok) { toast((await res.json()).error, 'error'); return }
-    if (editId === id) cancelEdit()
-    toast('Producto eliminado.'); load()
+    askConfirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`, async () => {
+      const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
+      if (!res.ok) { toast((await res.json()).error, 'error'); return }
+      if (editId === id) cancelEdit()
+      toast('Producto eliminado.'); load()
+    })
   }
 
   // ── Variant handlers ──
@@ -167,10 +172,11 @@ export default function InventarioPage() {
 
   async function deleteVariant(variantId: string, label: string) {
     if (!editId) return
-    if (!confirm(`¿Eliminar la variante "${label}"?`)) return
-    const res = await fetch(`/api/products/${editId}/variants/${variantId}`, { method: 'DELETE' })
-    if (!res.ok) { toast((await res.json()).error, 'error'); return }
-    toast('Variante eliminada.'); load()
+    askConfirm(`¿Eliminar la variante "${label}"?`, async () => {
+      const res = await fetch(`/api/products/${editId}/variants/${variantId}`, { method: 'DELETE' })
+      if (!res.ok) { toast((await res.json()).error, 'error'); return }
+      toast('Variante eliminada.'); load()
+    })
   }
 
   async function removeImage(id: string) {
@@ -443,6 +449,19 @@ export default function InventarioPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirm dialog */}
+      {dialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+          <div className="card max-w-sm w-full p-5 space-y-4" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+            <p className="text-[13px] leading-relaxed">{dialog.msg}</p>
+            <div className="flex gap-2 justify-end">
+              <button className="btn text-[12px]" onClick={() => setDialog(null)}>Cancelar</button>
+              <button className="btn text-[12px] !border-danger/40 !text-danger hover:!bg-danger/10" onClick={() => { dialog.onOk(); setDialog(null) }}>Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ToastContainer messages={messages} onDismiss={dismiss} />
     </div>

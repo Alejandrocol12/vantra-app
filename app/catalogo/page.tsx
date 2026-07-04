@@ -44,9 +44,7 @@ function CatalogoContent() {
         if (!d) return
         setStoreName(d.storeName)
         setWhatsapp(d.whatsappNumber)
-        setProducts((d.products as Product[]).filter(p =>
-          p.hasVariants ? p.variants.some(v => v.stock > 0) : p.stock > 0
-        ))
+        setProducts(d.products as Product[])
       })
   }, [userId])
 
@@ -152,7 +150,7 @@ function CatalogoContent() {
                 const cartQty = getCartQtyForProduct(p.id)
 
                 return (
-                  <div key={p.id} className={cn('prod-card flex flex-col transition-all', cartQty > 0 && 'ring-1 ring-brand/40')} style={cartQty > 0 ? { background: 'rgba(139,92,246,0.06)' } : {}}>
+                  <div key={p.id} className={cn('prod-card flex flex-col transition-all', cartQty > 0 && 'ring-1 ring-brand/40', available === 0 && 'opacity-60')} style={cartQty > 0 ? { background: 'rgba(139,92,246,0.06)' } : {}}>
                     <div className="w-full aspect-square rounded-xl overflow-hidden bg-surface2 flex items-center justify-center mb-3 flex-shrink-0 relative">
                       {p.image
                         ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
@@ -226,7 +224,7 @@ function CatalogoContent() {
         }
 
         <p className="text-center text-[11px] text-muted pt-4">
-          {filtered.length} producto{filtered.length !== 1 ? 's' : ''} disponible{filtered.length !== 1 ? 's' : ''}
+          {filtered.filter(p => p.hasVariants ? p.variants.some(v => v.stock > 0) : p.stock > 0).length} disponible{filtered.length !== 1 ? 's' : ''} · {filtered.filter(p => p.hasVariants ? !p.variants.some(v => v.stock > 0) : p.stock === 0).length} agotado{filtered.length !== 1 ? 's' : ''}
         </p>
       </div>
 

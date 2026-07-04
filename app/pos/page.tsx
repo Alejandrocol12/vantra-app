@@ -37,7 +37,7 @@ export default function PosPage() {
   async function loadProducts() {
     const res = await fetch('/api/products')
     const all: Product[] = await res.json()
-    setProducts(all.filter(p => p.hasVariants ? p.variants.some(v => v.stock > 0) : p.stock > 0))
+    setProducts(all)
   }
   async function loadClientes() {
     const res = await fetch('/api/clientes')
@@ -139,17 +139,27 @@ export default function PosPage() {
                   const cartItems = cart.filter(i => i.productId === p.id)
                   const inCartQty = cartItems.reduce((s, i) => s + i.quantity, 0)
                   const totalStock = p.hasVariants ? p.variants.reduce((s, v) => s + v.stock, 0) : p.stock
+                  const outOfStock = totalStock === 0
                   return (
                     <div
                       key={p.id}
-                      className={cn('prod-card select-none cursor-pointer', inCartQty > 0 && 'border-brand/50 bg-brand/[0.06]')}
-                      onClick={() => addToCart(p)}
+                      className={cn(
+                        'prod-card select-none',
+                        outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+                        !outOfStock && inCartQty > 0 && 'border-brand/50 bg-brand/[0.06]'
+                      )}
+                      onClick={() => !outOfStock && addToCart(p)}
                     >
-                      <div className="w-full h-[140px] rounded-lg overflow-hidden bg-surface2 flex items-center justify-center mb-3">
+                      <div className="w-full h-[140px] rounded-lg overflow-hidden bg-surface2 flex items-center justify-center mb-3 relative">
                         {p.image
                           ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
                           : <span className="text-4xl">{EMOJIS[p.category] ?? '📦'}</span>
                         }
+                        {outOfStock && (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-lg" style={{ background: 'rgba(7,7,15,0.55)' }}>
+                            <span className="text-[11px] font-bold text-danger bg-danger/15 border border-danger/30 px-2 py-1 rounded-full">Sin unidades</span>
+                          </div>
+                        )}
                       </div>
                       <p className="text-[13px] font-semibold leading-snug mb-1 line-clamp-2">{p.name}</p>
                       {p.hasVariants
