@@ -8,8 +8,9 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
 interface DashboardData {
-  today: { total: number; units: number }
-  month: { total: number; count: number }
+  today: { total: number; units: number; profit: number }
+  month: { total: number; count: number; profit: number }
+  allTime: { total: number; profit: number; count: number }
   inventory: {
     value: number
     lowStockCount: number
@@ -42,8 +43,8 @@ export default function DashboardPage() {
         <h1>Dashboard</h1>
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Ventas */}
+      <div className="grid grid-cols-3 gap-3">
         <div className="metric">
           <p className="metric-label">Ventas hoy</p>
           <p className="metric-value">{formatCurrency(data.today.total)}</p>
@@ -53,6 +54,25 @@ export default function DashboardPage() {
           <p className="metric-label">Ventas mes</p>
           <p className="metric-value">{formatCurrency(data.month.total)}</p>
           <p className="metric-sub">{data.month.count} transacciones</p>
+        </div>
+        <div className="metric">
+          <p className="metric-label">Ventas totales</p>
+          <p className="metric-value">{formatCurrency(data.allTime.total)}</p>
+          <p className="metric-sub">{data.allTime.count} históricas</p>
+        </div>
+      </div>
+
+      {/* Ganancias + alertas */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="metric">
+          <p className="metric-label">Ganancia mes</p>
+          <p className="metric-value text-success">{formatCurrency(data.month.profit)}</p>
+          <p className="metric-sub">estimada este mes</p>
+        </div>
+        <div className="metric">
+          <p className="metric-label">Ganancia total</p>
+          <p className="metric-value text-success">{formatCurrency(data.allTime.profit)}</p>
+          <p className="metric-sub">histórica acumulada</p>
         </div>
         <div className="metric">
           <p className="metric-label">Stock bajo</p>

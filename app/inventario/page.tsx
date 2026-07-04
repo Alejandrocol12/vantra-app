@@ -8,7 +8,7 @@ import StockBar, { StockBadge } from '@/components/StockBar'
 import { cn } from '@/lib/utils'
 
 interface Variant {
-  id: string; label: string; stock: number; minStock: number; cost: number; price: number
+  id: string; label: string; stock: number; minStock: number; cost: number; price: number; image: string | null
 }
 interface Product {
   id: string; name: string; category: string; flavor: string | null; puffs: number | null; image: string | null
@@ -57,6 +57,9 @@ export default function InventarioPage() {
   const [editVId, setEditVId] = useState<string | null>(null)
   const [showVForm, setShowVForm] = useState(false)
   const [savingV, setSavingV] = useState(false)
+  const [vImageFile, setVImageFile] = useState<File | null>(null)
+  const [vImagePreview, setVImagePreview] = useState<string | null>(null)
+  const vFileRef = useRef<HTMLInputElement>(null)
 
   // WhatsApp config
   const [whatsappInput, setWhatsappInput] = useState('')
@@ -145,9 +148,13 @@ export default function InventarioPage() {
   function startEditVariant(v: Variant) {
     setEditVId(v.id); setShowVForm(true)
     setVForm({ label: v.label, stock: v.stock, minStock: v.minStock, cost: v.cost, price: v.price })
+    setVImagePreview(v.image); setVImageFile(null)
   }
 
-  function cancelVForm() { setShowVForm(false); setEditVId(null); setVForm({ ...emptyVForm }) }
+  function cancelVForm() {
+    setShowVForm(false); setEditVId(null); setVForm({ ...emptyVForm })
+    setVImageFile(null); setVImagePreview(null)
+  }
 
   async function saveVariant(e: React.FormEvent) {
     e.preventDefault()
@@ -165,6 +172,13 @@ export default function InventarioPage() {
         body: JSON.stringify(vForm),
       })
       if (!res.ok) { toast((await res.json()).error, 'error'); return }
+      const savedV = await res.json()
+      const variantId = editVId ?? savedV.id
+      if (vImageFile && variantId && editId) {
+        const fd = new FormData(); fd.append('image', vImageFile)
+        const imgRes = await fetch(`/api/products/${editId}/variants/${variantId}/image`, { method: 'POST', body: fd })
+        if (!imgRes.ok) { toast('Error al subir imagen de variante.', 'error') }
+      }
       toast(editVId ? 'Variante actualizada.' : 'Variante agregada.')
       cancelVForm(); load()
     } finally { setSavingV(false) }
@@ -307,6 +321,9 @@ export default function InventarioPage() {
               )}
               {(editProduct?.variants ?? []).map(v => (
                 <div key={v.id} className={cn('flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.05]', editVId === v.id && 'bg-brand/5')}>
+                  <div className="w-8 h-8 rounded-lg bg-surface2 border border-white/[0.08] overflow-hidden flex-shrink-0 flex items-center justify-center text-base">
+                    {v.image ? <img src={v.image} alt="" className="w-full h-full object-cover" /> : <span>{EMOJIS[form.category] ?? '📦'}</span>}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-medium">{v.label}</p>
                     <p className="text-[11px] text-muted">Stock: <span className={cn(v.stock === 0 ? 'text-danger' : v.stock < v.minStock ? 'text-warn' : 'text-success')}>{v.stock}</span> · Mín: {v.minStock} · {formatCurrency(v.price)}</p>
@@ -325,6 +342,28 @@ export default function InventarioPage() {
                   <div className="field">
                     <label className="label">Nombre / sabor</label>
                     <input className="input text-[12px]" required placeholder="Mango Ice" value={vForm.label} onChange={e => setVForm(f => ({ ...f, label: e.target.value }))} />
+                  </div>
+                  <div className="field">
+                    <label className="label">Imagen del sabor</label>
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-lg bg-surface2 border border-white/[0.08] overflow-hidden flex items-center justify-center cursor-pointer hover:opacity-75 transition-opacity" onClick={() => vFileRef.current?.click()}>
+                        {vImagePreview ? <img src={vImagePreview} alt="" className="w-full h-full object-cover" /> : <ImagePlus size={14} className="text-muted" />}
+                      </div>
+                      <button type="button" onClick={() => vFileRef.current?.click()} className="btn text-[11px] py-1">
+                        <ImagePlus size={11} />{vImagePreview ? 'Cambiar' : 'Foto'}
+                      </button>
+                      {vImagePreview && editVId && (
+                        <button type="button" className="btn text-[11px] py-1 hover:!text-danger" onClick={async () => {
+                          await fetch(`/api/products/${editId}/variants/${editVId}/image`, { method: 'DELETE' })
+                          setVImagePreview(null); setVImageFile(null); load()
+                        }}><X size={11} /></button>
+                      )}
+                    </div>
+                    <input ref={vFileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={e => {
+                      const f = e.target.files?.[0]; if (!f) return
+                      if (f.size > 2 * 1024 * 1024) { toast('Máx. 2 MB.', 'error'); return }
+                      setVImageFile(f); setVImagePreview(URL.createObjectURL(f))
+                    }} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="field"><label className="label">Stock</label><input className="input text-[12px]" type="number" onFocus={e => e.target.select()} min="0" value={vForm.stock} onChange={e => setVForm(f => ({ ...f, stock: Number(e.target.value) }))} /></div>
@@ -408,7 +447,15 @@ export default function InventarioPage() {
                               }
                             </td>
                             <td className="text-muted">{p.category}</td>
-                            <td className="font-medium">{p.hasVariants ? <span className="text-muted text-[11px]">—</span> : formatCurrency(p.price)}</td>
+                            <td>
+                              {p.hasVariants
+                                ? <span className="text-muted text-[11px]">—</span>
+                                : <>
+                                    <p className="font-medium text-[12px]">{formatCurrency(p.price)}</p>
+                                    {p.cost > 0 && <p className="text-[10px] text-success">+{((p.price - p.cost) / p.cost * 100).toFixed(0)}% margen</p>}
+                                  </>
+                              }
+                            </td>
                             <td className={cn('font-semibold', totalStock === 0 ? 'text-danger' : '')}>{totalStock}</td>
                             <td>{!p.hasVariants && <StockBar stock={p.stock} minStock={p.minStock} />}</td>
                             <td>{!p.hasVariants && <StockBadge stock={p.stock} minStock={p.minStock} />}</td>
@@ -427,12 +474,19 @@ export default function InventarioPage() {
                           {/* Variant rows */}
                           {isExpanded && p.variants.map(v => (
                             <tr key={v.id} className="bg-surface2/30">
-                              <td></td>
-                              <td className="!pl-5">
+                              <td className="!pr-1">
+                                <div className="w-9 h-9 rounded-lg bg-surface2 border border-white/[0.08] overflow-hidden flex items-center justify-center text-base">
+                                  {v.image ? <img src={v.image} alt="" className="w-full h-full object-cover" /> : (p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : <span>{EMOJIS[p.category] ?? '📦'}</span>)}
+                                </div>
+                              </td>
+                              <td className="!pl-2">
                                 <p className="text-[12px] text-muted before:content-['↳_']">{v.label}</p>
                               </td>
                               <td></td>
-                              <td className="text-[12px]">{formatCurrency(v.price)}</td>
+                              <td>
+                                <p className="text-[12px]">{formatCurrency(v.price)}</p>
+                                {v.cost > 0 && <p className="text-[10px] text-success">+{((v.price - v.cost) / v.cost * 100).toFixed(0)}%</p>}
+                              </td>
                               <td className={cn('text-[12px] font-semibold', v.stock === 0 ? 'text-danger' : v.stock < v.minStock ? 'text-warn' : '')}>{v.stock}</td>
                               <td><StockBar stock={v.stock} minStock={v.minStock} /></td>
                               <td><StockBadge stock={v.stock} minStock={v.minStock} /></td>

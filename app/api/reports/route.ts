@@ -81,6 +81,7 @@ export async function GET(request: Request) {
         totalSales: 0,
         units: productRows.reduce((s, r) => s + r.stock, 0),
         profit: productRows.reduce((s, r) => s + r.stock * r.cost, 0),
+        inventoryValue: productRows.reduce((s, r) => s + r.stock * r.price, 0),
         lowStock: lowStockCount,
       },
     })

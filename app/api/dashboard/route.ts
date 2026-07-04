@@ -35,14 +35,19 @@ export async function GET() {
 
   const activeOnly = { status: 'activa' }
 
-  const [todayAgg, monthAgg, products, recentSales, weekSales, topRaw, clientes] = await Promise.all([
+  const [todayAgg, monthAgg, allTimeAgg, products, recentSales, weekSales, topRaw, clientes] = await Promise.all([
     prisma.sale.aggregate({
       where: { userId, date: { gte: todayStart }, ...activeOnly },
-      _sum: { total: true, quantity: true },
+      _sum: { total: true, quantity: true, profit: true },
     }),
     prisma.sale.aggregate({
       where: { userId, date: { gte: monthStart }, ...activeOnly },
-      _sum: { total: true },
+      _sum: { total: true, profit: true },
+      _count: true,
+    }),
+    prisma.sale.aggregate({
+      where: { userId, ...activeOnly },
+      _sum: { total: true, profit: true },
       _count: true,
     }),
     prisma.product.findMany({
@@ -126,8 +131,9 @@ export async function GET() {
   }))
 
   return NextResponse.json({
-    today: { total: todayAgg._sum.total ?? 0, units: todayAgg._sum.quantity ?? 0 },
-    month: { total: monthAgg._sum.total ?? 0, count: monthAgg._count },
+    today: { total: todayAgg._sum.total ?? 0, units: todayAgg._sum.quantity ?? 0, profit: todayAgg._sum.profit ?? 0 },
+    month: { total: monthAgg._sum.total ?? 0, count: monthAgg._count, profit: monthAgg._sum.profit ?? 0 },
+    allTime: { total: allTimeAgg._sum.total ?? 0, profit: allTimeAgg._sum.profit ?? 0, count: allTimeAgg._count },
     inventory: { value: inventoryValue, lowStockCount: lowStockProducts.length, lowStockProducts },
     fiado: { totalDeuda: totalDeudaFiado, clientesConDeuda },
     recentSales,

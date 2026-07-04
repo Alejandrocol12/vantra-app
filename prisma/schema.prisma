@@ -45,6 +45,7 @@ model Variant {
   minStock  Int       @default(0)
   cost      Float
   price     Float
+  image     String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   sales     Sale[]

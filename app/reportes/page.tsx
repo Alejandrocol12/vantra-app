@@ -7,7 +7,7 @@ import StockBar, { StockBadge } from '@/components/StockBar'
 import { useToast, ToastContainer } from '@/components/Toast'
 import { cn } from '@/lib/utils'
 
-interface Summary { totalSales: number; units: number; profit: number; lowStock: number }
+interface Summary { totalSales: number; units: number; profit: number; inventoryValue?: number; lowStock: number }
 interface SaleRow { id: string; productName: string; quantity: number; payment: string; total: number; profit: number; date: string; note: string | null }
 interface ProductRow { id: string; name: string; variantLabel: string | null; category: string; flavor: string | null; stock: number; minStock: number; price: number; cost: number }
 interface ReportData { type: string; period: string; summary: Summary; sales: SaleRow[]; products: ProductRow[] }
@@ -91,12 +91,13 @@ export default function ReportesPage() {
 
       {data && (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className={cn('grid grid-cols-2 gap-3', type === 'inventory' ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}>
             {(type === 'inventory'
               ? [
                   { label: 'Referencias', val: String(data.products.length) },
                   { label: 'Unidades en stock', val: String(data.summary.units) },
-                  { label: 'Costo total inventario', val: formatCurrency(data.summary.profit) },
+                  { label: 'Costo total (compra)', val: formatCurrency(data.summary.profit) },
+                  { label: 'Valor inventario (venta)', val: formatCurrency(data.summary.inventoryValue ?? 0) },
                   { label: 'Productos en mínimo', val: String(data.summary.lowStock) },
                 ]
               : [

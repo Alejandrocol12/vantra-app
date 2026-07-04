@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { Search, Layers, MessageCircle, Plus, Minus, ShoppingCart, X, ChevronRight } from 'lucide-react'
+import { Search, MessageCircle, Plus, Minus, ShoppingCart, X } from 'lucide-react'
 import { formatCurrency, CATEGORIES } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
-interface Variant { id: string; label: string; stock: number; price: number }
+interface Variant { id: string; label: string; stock: number; price: number; image: string | null }
 interface Product {
   id: string; name: string; category: string; flavor: string | null; puffs: number | null; image: string | null
   stock: number; price: number; hasVariants: boolean; variants: Variant[]
@@ -17,6 +17,15 @@ interface CartItem {
   product: Product
   variant: Variant | null
   qty: number
+}
+interface DisplayItem {
+  key: string
+  product: Product
+  variant: Variant | null
+  name: string
+  image: string | null
+  price: number
+  stock: number
 }
 
 const EMOJIS: Record<string, string> = { Desechable: '🔋', Recargable: '⚡', Pod: '💨', Líquido: '🧪', Accesorio: '🔩' }
@@ -33,8 +42,6 @@ function CatalogoContent() {
   const [notFound, setNotFound] = useState(false)
   const [cart, setCart] = useState<CartItem[]>([])
   const [showCart, setShowCart] = useState(false)
-  // variant picker state
-  const [pickerProduct, setPickerProduct] = useState<Product | null>(null)
 
   useEffect(() => {
     if (!userId) { setNotFound(true); return }
@@ -48,11 +55,40 @@ function CatalogoContent() {
       })
   }, [userId])
 
-  const filtered = useMemo(() => products.filter(p => {
+  // Flatten products + variants into individual display items
+  const flatItems = useMemo<DisplayItem[]>(() => {
     const q = search.toLowerCase()
-    return `${p.name} ${p.flavor ?? ''} ${p.category}`.toLowerCase().includes(q)
-      && (cat === 'Todas' || p.category === cat)
-  }), [products, search, cat])
+    const items: DisplayItem[] = []
+    for (const p of products) {
+      if (cat !== 'Todas' && p.category !== cat) continue
+      if (p.hasVariants && p.variants.length > 0) {
+        for (const v of p.variants) {
+          if (q && !`${p.name} ${v.label} ${p.category}`.toLowerCase().includes(q)) continue
+          items.push({
+            key: `${p.id}-${v.id}`,
+            product: p,
+            variant: v,
+            name: `${p.name} — ${v.label}`,
+            image: v.image ?? p.image,
+            price: v.price,
+            stock: v.stock,
+          })
+        }
+      } else if (!p.hasVariants) {
+        if (q && !`${p.name} ${p.flavor ?? ''} ${p.category}`.toLowerCase().includes(q)) continue
+        items.push({
+          key: p.id,
+          product: p,
+          variant: null,
+          name: p.name,
+          image: p.image,
+          price: p.price,
+          stock: p.stock,
+        })
+      }
+    }
+    return items
+  }, [products, search, cat])
 
   const totalItems = cart.reduce((s, i) => s + i.qty, 0)
 
@@ -79,27 +115,14 @@ function CatalogoContent() {
     setCart(prev => prev.filter(i => i.key !== key))
   }
 
-  function getCartQtyForProduct(productId: string) {
-    return cart.filter(i => i.product.id === productId).reduce((s, i) => s + i.qty, 0)
-  }
-
-  function handleAddClick(p: Product) {
-    if (p.hasVariants) {
-      setPickerProduct(p)
-    } else {
-      addItem(p, null)
-    }
-  }
-
   function sendOrder() {
     if (!whatsapp || cart.length === 0) return
     const lines = cart.map(({ product: p, variant: v, qty }) => {
       const label = v ? `${p.name} — ${v.label}` : p.name
-      const puffsText = !v && p.puffs ? ` (${p.puffs.toLocaleString()} puffs)` : ''
+      const puffsText = p.puffs ? ` (${p.puffs.toLocaleString()} puffs)` : ''
       const price = v ? v.price : p.price
       return `• *${label}${puffsText}*\n  Cantidad: ${qty} · ${formatCurrency(price)} c/u`
     }).join('\n\n')
-
     const msg = encodeURIComponent(`Hola! Quisiera hacer el siguiente pedido:\n\n${lines}\n\n¿Está todo disponible?`)
     const phone = whatsapp.replace(/\D/g, '')
     window.open(`https://wa.me/${phone}?text=${msg}`, '_blank')
@@ -110,6 +133,9 @@ function CatalogoContent() {
       <p className="text-muted text-[13px]">Catálogo no encontrado.</p>
     </div>
   )
+
+  const available = flatItems.filter(i => i.stock > 0).length
+  const agotados = flatItems.filter(i => i.stock === 0).length
 
   return (
     <div className="min-h-screen pb-28" style={{ background: '#07070f' }}>
@@ -137,81 +163,82 @@ function CatalogoContent() {
         </div>
 
         {/* Grid */}
-        {filtered.length === 0
+        {flatItems.length === 0
           ? <p className="text-center text-muted py-16 text-[13px]">No hay productos disponibles.</p>
           : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {filtered.map(p => {
-                const availableVariants = p.hasVariants ? p.variants.filter(v => v.stock > 0) : []
-                const available = p.hasVariants ? availableVariants.length : p.stock
-                const minPrice = p.hasVariants
-                  ? Math.min(...availableVariants.map(v => v.price))
-                  : p.price
-                const cartQty = getCartQtyForProduct(p.id)
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {flatItems.map(({ key, product: p, variant: v, name, image, price, stock }) => {
+                const cartItem = cart.find(i => i.key === key)
+                const qty = cartItem?.qty ?? 0
 
                 return (
-                  <div key={p.id} className={cn('prod-card flex flex-col transition-all', cartQty > 0 && 'ring-1 ring-brand/40', available === 0 && 'opacity-60')} style={cartQty > 0 ? { background: 'rgba(139,92,246,0.06)' } : {}}>
-                    <div className="w-full aspect-square rounded-xl overflow-hidden bg-surface2 flex items-center justify-center mb-3 flex-shrink-0 relative">
-                      {p.image
-                        ? <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                        : <span className="text-6xl">{EMOJIS[p.category] ?? '📦'}</span>
+                  <div key={key} className={cn('prod-card flex flex-col transition-all', qty > 0 && 'ring-1 ring-brand/40', stock === 0 && 'opacity-60')} style={qty > 0 ? { background: 'rgba(139,92,246,0.06)' } : {}}>
+                    <div className="w-full aspect-square rounded-xl overflow-hidden bg-surface2 flex items-center justify-center mb-2 flex-shrink-0 relative">
+                      {image
+                        ? <img src={image} alt={name} className="w-full h-full object-cover" />
+                        : <span className="text-5xl">{EMOJIS[p.category] ?? '📦'}</span>
                       }
-                      {cartQty > 0 && (
+                      {qty > 0 && (
                         <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-brand flex items-center justify-center text-[10px] font-bold text-white">
-                          {cartQty}
+                          {qty}
+                        </div>
+                      )}
+                      {stock === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-xl" style={{ background: 'rgba(7,7,15,0.55)' }}>
+                          <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}>Agotado</span>
                         </div>
                       )}
                     </div>
+
                     <div className="flex-1 flex flex-col">
-                      <p className="text-[15px] font-semibold leading-snug mb-1 line-clamp-2">{p.name}</p>
-                      {p.hasVariants
-                        ? <p className="text-[12px] text-brand mb-1 flex items-center gap-1"><Layers size={11} />{availableVariants.length} sabores disponibles</p>
-                        : <p className="text-[12px] text-muted mb-1 truncate">{[p.flavor, p.puffs ? `${p.puffs.toLocaleString()} puffs` : null].filter(Boolean).join(' · ')}</p>
-                      }
+                      <p className="text-[13px] font-semibold leading-snug mb-1 line-clamp-2">{name}</p>
+                      {!v && (p.flavor || p.puffs) && (
+                        <p className="text-[11px] text-muted mb-1 truncate">{[p.flavor, p.puffs ? `${p.puffs.toLocaleString()} puffs` : null].filter(Boolean).join(' · ')}</p>
+                      )}
+                      {v && p.puffs && (
+                        <p className="text-[11px] text-muted mb-1">{p.puffs.toLocaleString()} puffs</p>
+                      )}
+
                       <div className="mt-auto pt-2 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[16px] font-bold text-brand">
-                            {p.hasVariants ? `Desde ${formatCurrency(minPrice)}` : formatCurrency(p.price)}
-                          </span>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[15px] font-bold text-brand">{formatCurrency(price)}</span>
                           <span className={cn(
-                            'text-[10px] px-2 py-0.5 rounded-full font-semibold',
-                            available > 0 ? 'bg-success/15 text-success border border-success/20' : 'bg-danger/15 text-danger border border-danger/20'
+                            'text-[9px] px-1.5 py-0.5 rounded-full font-semibold shrink-0',
+                            stock > 0 ? 'bg-success/15 text-success border border-success/20' : 'bg-danger/15 text-danger border border-danger/20'
                           )}>
-                            {available > 0 ? 'Disponible' : 'Agotado'}
+                            {stock > 0 ? `${stock} disp.` : 'Agotado'}
                           </span>
                         </div>
-                        {whatsapp && available > 0 && (
-                          p.hasVariants ? (
+
+                        {whatsapp && stock > 0 && (
+                          qty > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => changeQty(key, -1)}
+                                className="flex-none w-7 h-7 rounded-lg flex items-center justify-center text-brand"
+                                style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}
+                              >
+                                <Minus size={11} />
+                              </button>
+                              <span className="flex-1 text-center text-[13px] font-bold">{qty}</span>
+                              <button
+                                onClick={() => changeQty(key, 1, stock)}
+                                disabled={qty >= stock}
+                                className="flex-none w-7 h-7 rounded-lg flex items-center justify-center text-brand disabled:opacity-30"
+                                style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}
+                              >
+                                <Plus size={11} />
+                              </button>
+                            </div>
+                          ) : (
                             <button
-                              onClick={() => handleAddClick(p)}
+                              onClick={() => addItem(p, v)}
                               className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-opacity hover:opacity-90"
                               style={{ background: 'rgba(37,211,102,0.12)', color: '#25d366', border: '1px solid rgba(37,211,102,0.25)' }}
                             >
-                              <Layers size={11} />
-                              Elegir sabor
-                              <ChevronRight size={11} />
+                              <Plus size={11} />
+                              Agregar
                             </button>
-                          ) : (
-                            cartQty > 0 ? (
-                              <div className="flex items-center gap-1">
-                                <button onClick={() => changeQty(p.id, -1)} className="flex-none w-7 h-7 rounded-lg flex items-center justify-center text-brand" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}>
-                                  <Minus size={11} />
-                                </button>
-                                <span className="flex-1 text-center text-[13px] font-bold">{cartQty}</span>
-                                <button onClick={() => changeQty(p.id, 1, p.stock)} disabled={cartQty >= p.stock} className="flex-none w-7 h-7 rounded-lg flex items-center justify-center text-brand disabled:opacity-30" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}>
-                                  <Plus size={11} />
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => handleAddClick(p)}
-                                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold transition-opacity hover:opacity-90"
-                                style={{ background: 'rgba(37,211,102,0.12)', color: '#25d366', border: '1px solid rgba(37,211,102,0.25)' }}
-                              >
-                                <Plus size={12} />
-                                Agregar al pedido
-                              </button>
-                            )
                           )
                         )}
                       </div>
@@ -223,8 +250,8 @@ function CatalogoContent() {
           )
         }
 
-        <p className="text-center text-[11px] text-muted pt-4">
-          {filtered.filter(p => p.hasVariants ? p.variants.some(v => v.stock > 0) : p.stock > 0).length} disponible{filtered.length !== 1 ? 's' : ''} · {filtered.filter(p => p.hasVariants ? !p.variants.some(v => v.stock > 0) : p.stock === 0).length} agotado{filtered.length !== 1 ? 's' : ''}
+        <p className="text-center text-[11px] text-muted pt-2">
+          {available} disponible{available !== 1 ? 's' : ''} · {agotados} agotado{agotados !== 1 ? 's' : ''}
         </p>
       </div>
 
@@ -242,64 +269,6 @@ function CatalogoContent() {
         </div>
       )}
 
-      {/* Variant picker modal */}
-      {pickerProduct && (
-        <div className="fixed inset-0 z-30 flex items-end sm:items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setPickerProduct(null) }}>
-          <div className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl overflow-hidden" style={{ background: '#0e0e1c', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div>
-                <p className="font-semibold text-[13px]">{pickerProduct.name}</p>
-                <p className="text-[11px] text-muted">Elige el sabor que deseas</p>
-              </div>
-              <button onClick={() => setPickerProduct(null)} className="btn-icon"><X size={14} /></button>
-            </div>
-            <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
-              {pickerProduct.variants.filter(v => v.stock > 0).map(v => {
-                const key = `${pickerProduct.id}-${v.id}`
-                const inCart = cart.find(i => i.key === key)
-                return (
-                  <div key={v.id} className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold">{v.label}</p>
-                      <p className="text-[11px] text-brand font-bold">{formatCurrency(v.price)}</p>
-                    </div>
-                    {inCart ? (
-                      <div className="flex items-center gap-1.5">
-                        <button onClick={() => changeQty(key, -1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-brand" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}>
-                          <Minus size={11} />
-                        </button>
-                        <span className="w-5 text-center text-[13px] font-bold">{inCart.qty}</span>
-                        <button onClick={() => changeQty(key, 1, v.stock)} disabled={inCart.qty >= v.stock} className="w-7 h-7 rounded-lg flex items-center justify-center text-brand disabled:opacity-30" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.25)' }}>
-                          <Plus size={11} />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => addItem(pickerProduct, v)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold"
-                        style={{ background: 'rgba(37,211,102,0.15)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)' }}
-                      >
-                        <Plus size={11} /> Agregar
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-            <div className="px-4 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <button
-                onClick={() => setPickerProduct(null)}
-                className="w-full py-2.5 rounded-xl text-[12px] font-semibold"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-              >
-                Listo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Cart modal */}
       {showCart && (
         <div className="fixed inset-0 z-30 flex items-end sm:items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
@@ -313,7 +282,7 @@ function CatalogoContent() {
               {cart.map(({ key, product: p, variant: v, qty }) => (
                 <div key={key} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-surface2 flex items-center justify-center flex-shrink-0 text-lg">
-                    {p.image ? <img src={p.image} alt="" className="w-full h-full object-cover" /> : EMOJIS[p.category] ?? '📦'}
+                    {(v?.image ?? p.image) ? <img src={v?.image ?? p.image!} alt="" className="w-full h-full object-cover" /> : EMOJIS[p.category] ?? '📦'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-semibold truncate">{p.name}{v ? ` — ${v.label}` : ''}</p>
@@ -329,6 +298,10 @@ function CatalogoContent() {
               ))}
             </div>
             <div className="px-4 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center justify-between mb-3 text-[12px]">
+                <span className="text-muted">Total estimado</span>
+                <span className="font-bold text-brand">{formatCurrency(cart.reduce((s, i) => s + (i.variant ? i.variant.price : i.product.price) * i.qty, 0))}</span>
+              </div>
               <button
                 onClick={() => { sendOrder(); setShowCart(false) }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-[13px]"
